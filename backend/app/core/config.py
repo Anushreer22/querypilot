@@ -21,6 +21,11 @@ class Settings(BaseSettings):
         "postgresql+psycopg://readonly_user:querypilot_readonly_pass@127.0.0.1:5436/sample_shop"
     )
 
+    # Privileged Database Connection for sample_shop (migrations & seeding as postgres)
+    shop_admin_database_url: str = (
+        "postgresql+psycopg://postgres:querypilot_postgres_pass@127.0.0.1:5436/sample_shop"
+    )
+
     # CORS Allowed Origins
     cors_origins: str | list[str] = ["http://localhost:5173"]
 
