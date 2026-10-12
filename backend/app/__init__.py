@@ -1,0 +1,2 @@
+"""QueryPilot backend application package."""
+
