@@ -75,30 +75,29 @@ def test_invalid_order_status_rejected():
 
 def test_zero_or_negative_order_item_quantity_rejected():
     """Verify CHECK (quantity > 0) rejects quantity <= 0."""
-    with get_admin_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT id FROM orders LIMIT 1;")
-            order_row = cur.fetchone()
-            cur.execute("SELECT id FROM products LIMIT 1;")
-            prod_row = cur.fetchone()
+    with get_admin_conn() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id FROM orders LIMIT 1;")
+        order_row = cur.fetchone()
+        cur.execute("SELECT id FROM products LIMIT 1;")
+        prod_row = cur.fetchone()
 
-            if order_row and prod_row:
-                order_id = order_row[0]
-                prod_id = prod_row[0]
+        if order_row and prod_row:
+            order_id = order_row[0]
+            prod_id = prod_row[0]
 
-                with pytest.raises(errors.CheckViolation):
-                    cur.execute(
-                        "INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (%s, %s, 0, 10.00);",
-                        (order_id, prod_id),
-                    )
-                conn.rollback()
+            with pytest.raises(errors.CheckViolation):
+                cur.execute(
+                    "INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (%s, %s, 0, 10.00);",
+                    (order_id, prod_id),
+                )
+            conn.rollback()
 
-                with pytest.raises(errors.CheckViolation):
-                    cur.execute(
-                        "INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (%s, %s, -2, 10.00);",
-                        (order_id, prod_id),
-                    )
-                conn.rollback()
+            with pytest.raises(errors.CheckViolation):
+                cur.execute(
+                    "INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (%s, %s, -2, 10.00);",
+                    (order_id, prod_id),
+                )
+            conn.rollback()
 
 
 def test_orphan_foreign_key_rejected():

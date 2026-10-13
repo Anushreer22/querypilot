@@ -30,3 +30,47 @@ We partition the database architecture into two separate databases and two isola
 - **Operational Clarity**: Clean separation between application migrations (managed via Alembic on `querypilot_app`) and target data schemas.
 - **Maintenance**: Requires maintaining two distinct connection URLs and credentials in environment configuration.
 
+---
+
+## ADR 002: AST-Based SQL Validation and Secure Query Execution Architecture
+
+### Context
+In Phase 3, QueryPilot introduces schema inspection and arbitrary query execution APIs (`POST /api/query/execute`). These endpoints are designed to accept ad-hoc SQL from end users and AI agents (starting in Phase 4). Executing arbitrary SQL against a relational database introduces critical security risks:
+1. **Destructive Operations**: Prompt injections or malicious inputs attempting `DROP`, `DELETE`, `TRUNCATE`, `UPDATE`, or `ALTER`.
+2. **Denial-of-Service**: Intentional slow queries (`pg_sleep()`, heavy unbounded joins, or lock hoarding via `FOR UPDATE`).
+3. **Data Exfiltration & Snooping**: Reading system catalogs (`pg_catalog`, `information_schema`), file system probes (`pg_read_file()`), or remote connection hooks (`dblink`).
+4. **Obfuscation & Bypass**: Regex-based sanitizers frequently fail against SQL syntax nuances (e.g. comments `/* */`, string escapes, nested CTEs, and stacked statements).
+
+### Decision
+We implement a four-layer defense-in-depth security model centered around strict Abstract Syntax Tree (AST) validation:
+
+1. **AST-Based Validation via Pinned `sqlglot` (`sqlglot==30.22.0`)**:
+   - Disallow regex for security decisions. Parse full queries with PostgreSQL dialect into an AST.
+   - Enforce strictly one statement (reject empty and stacked statements).
+   - Root statement must be `exp.Select` or `exp.Union`.
+   - Walk all AST nodes to reject mutation statements (`Insert`, `Update`, `Delete`, `Drop`, `Alter`, `Create`, `TruncateTable`, `Merge`), data-modifying CTEs, `SELECT ... INTO`, row locking (`Lock`), and information functions (`CurrentUser`, `SessionUser`, `CurrentVersion`).
+   - Strict function allowlist: aggregates, math, string, date/time, and window functions.
+   - Table allowlist: restricted to `users`, `products`, `orders`, and `order_items` in schema `public`. CTE aliases are tracked and isolated.
+   - LIMIT clamping: automatically append `LIMIT 1000` if omitted, clamp limits > 1000 down to 1000, and reject non-literal limit expressions.
+   - Execute **ONLY** sanitized SQL regenerated from the AST via `parsed.sql(dialect="postgres")`. Never execute raw input strings.
+
+2. **Explicit Read-Only Transactions**:
+   - Execute `SET TRANSACTION READ ONLY;` as the initial statement in every transaction on `sample_shop`.
+   - Configure session timeouts: `statement_timeout = 5000ms`, `lock_timeout = 3000ms`, and `idle_in_transaction_session_timeout = 5000ms`.
+   - Timeout detection relies strictly on PostgreSQL SQLSTATE codes (`57014` query canceled, `55P03` lock not available) rather than brittle string matching.
+
+3. **Database-Level Role Hardening**:
+   - `readonly_user` role has `default_transaction_read_only = on`, `statement_timeout = '5s'`, and `CONNECTION LIMIT 20`.
+   - Execution permissions on `pg_sleep(double precision)` are revoked from `PUBLIC` and `readonly_user`.
+
+4. **Independent Audit Ledger**:
+   - All query attempts (`success`, `rejected`, `error`, `timeout`) are recorded in `query_history` on `querypilot_app` using the `app_rw` engine.
+   - Logging is isolated in a separate transaction; history write failures are trapped and never crash user responses.
+
+### Consequences
+- **Robustness**: Complete immunity to comment-based SQL obfuscation, stacked command execution, and unauthorized table access.
+- **Deterministic Resource Consumption**: Guaranteed row caps (<= 1000) and strict statement timeouts (<= 5s) prevent runaway queries and OOM crashes.
+- **Auditability**: Complete ledger of all query attempts with execution durations and rejection reasons.
+- **Strictness**: Highly complex non-standard PostgreSQL features (e.g. table-valued extensions, administrative commands) are intentionally blocked unless added to the explicit allowlists.
+
+
