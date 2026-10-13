@@ -4,6 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.health import router as health_router
+from app.api.query import router as query_router
+from app.api.schema import router as schema_router
 from app.core.config import settings
 from app.db.session import app_engine, shop_engine
 
@@ -35,6 +37,8 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health_router)
+app.include_router(schema_router)
+app.include_router(query_router)
 
 if __name__ == "__main__":
     import sys

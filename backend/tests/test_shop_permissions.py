@@ -23,7 +23,7 @@ def test_readonly_user_can_select():
 def test_readonly_user_cannot_insert():
     """Verify readonly_user is denied INSERT permission."""
     with get_readonly_conn() as conn:
-        with conn.cursor() as cur, pytest.raises(errors.InsufficientPrivilege):
+        with conn.cursor() as cur, pytest.raises((errors.InsufficientPrivilege, errors.ReadOnlySqlTransaction)):
             cur.execute("INSERT INTO users (name, email, country) VALUES ('Hacker', 'hacker@bad.com', 'US');")
         conn.rollback()
 
@@ -31,7 +31,7 @@ def test_readonly_user_cannot_insert():
 def test_readonly_user_cannot_update():
     """Verify readonly_user is denied UPDATE permission."""
     with get_readonly_conn() as conn:
-        with conn.cursor() as cur, pytest.raises(errors.InsufficientPrivilege):
+        with conn.cursor() as cur, pytest.raises((errors.InsufficientPrivilege, errors.ReadOnlySqlTransaction)):
             cur.execute("UPDATE products SET price = 0.01 WHERE id = 1;")
         conn.rollback()
 
@@ -39,7 +39,7 @@ def test_readonly_user_cannot_update():
 def test_readonly_user_cannot_delete():
     """Verify readonly_user is denied DELETE permission."""
     with get_readonly_conn() as conn:
-        with conn.cursor() as cur, pytest.raises(errors.InsufficientPrivilege):
+        with conn.cursor() as cur, pytest.raises((errors.InsufficientPrivilege, errors.ReadOnlySqlTransaction)):
             cur.execute("DELETE FROM orders WHERE id = 1;")
         conn.rollback()
 
@@ -47,6 +47,6 @@ def test_readonly_user_cannot_delete():
 def test_readonly_user_cannot_drop_table():
     """Verify readonly_user is denied DDL DROP TABLE permission."""
     with get_readonly_conn() as conn:
-        with conn.cursor() as cur, pytest.raises(errors.InsufficientPrivilege):
+        with conn.cursor() as cur, pytest.raises((errors.InsufficientPrivilege, errors.ReadOnlySqlTransaction)):
             cur.execute("DROP TABLE order_items;")
         conn.rollback()

@@ -156,9 +156,48 @@ Open [http://localhost:5173](http://localhost:5173) in your browser. The page di
 
 ---
 
-### 7. Running Automated Tests
+---
 
-Run the complete test suite across health checks, schema constraints, security roles, and seed data integrity:
+### 7. Secure Query Execution & Schema API (Phase 3)
+
+QueryPilot exposes secured endpoints for schema introspection, validated query execution, and audit logging:
+
+| Method | Endpoint | Description | Status Codes |
+|---|---|---|---|
+| `GET` | `/api/schema` | Structured schema metadata for business tables (`users`, `products`, `orders`, `order_items`) | `200` |
+| `POST` | `/api/query/execute` | Validates AST, injects/clamps limits, executes in read-only transaction, and logs audit trail | `200`, `422`, `400`, `504` |
+| `GET` | `/api/query/history` | Paginated audit log of all attempted and executed queries | `200` |
+
+#### Git Bash / cURL Examples
+
+```bash
+# 1. Inspect business schema metadata
+curl -s http://127.0.0.1:8000/api/schema
+
+# 2. Execute a valid read-only query
+curl -s -X POST http://127.0.0.1:8000/api/query/execute \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "SELECT id, name, email FROM users ORDER BY id ASC LIMIT 5", "source": "curl_demo"}'
+
+# 3. Automatic limit injection (LIMIT 1000 injected if omitted)
+curl -s -X POST http://127.0.0.1:8000/api/query/execute \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "SELECT count(*), round(avg(price), 2) AS avg_price FROM products", "source": "curl_demo"}'
+
+# 4. AST Validator rejection (mutation commands blocked with 422)
+curl -s -i -X POST http://127.0.0.1:8000/api/query/execute \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "DROP TABLE users", "source": "curl_demo"}'
+
+# 5. Fetch query execution audit history
+curl -s "http://127.0.0.1:8000/api/query/history?limit=10&offset=0"
+```
+
+---
+
+### 8. Running Automated Tests
+
+Run the complete test suite across health checks, schema constraints, security roles, AST validation, execution safeguards, and seed data integrity:
 
 ```powershell
 backend\.venv\Scripts\pytest backend\tests -v
@@ -166,7 +205,10 @@ backend\.venv\Scripts\pytest backend\tests -v
 
 Tests include:
 - `test_health.py`: Health checks against live databases (200) and mocked failure states (503).
-- `test_shop_schema.py`: Schema validation, foreign keys, check constraints (negative price/stock/quantity rejection, status whitelist, orphan FK checks).
+- `test_sql_validator.py`: Unit tests for AST validator (stacked query rejection, mutation blocking, function allowlist, table allowlist, CTE scoping, limit clamping, idempotent regeneration).
+- `test_query_executor.py`: Verifies `SHOW transaction_read_only == 'on'`, statement timeout cancellation (`57014`), database-level rejection of `INSERT` (`25006`) and `pg_sleep` (`42501`), and audit logger persistence.
+- `test_query_api.py`: FastAPI route tests for `/api/schema`, `/api/query/execute` (200, 422, 400, 504), and `/api/query/history`.
+- `test_shop_schema.py`: Schema validation, foreign keys, and check constraints.
 - `test_shop_permissions.py`: Verifies `readonly_user` can execute `SELECT` but is strictly blocked from `INSERT`, `UPDATE`, `DELETE`, and `DROP TABLE`.
 - `test_shop_seed.py`: Runs `--small` seed mode, verifies row counts, and verifies that `orders.total_amount == sum(quantity * unit_price)` for 100% of orders.
 
@@ -174,5 +216,6 @@ Tests include:
 
 ## Detailed Documentation & Query Profiles
 
+- **Security Architecture & Threat Model**: Defense-in-depth layers, AST validation rules, function allowlists, and threat matrix are detailed in [`docs/SECURITY.md`](docs/SECURITY.md).
 - **Database Schema & Deliberate Index Omissions**: Full Mermaid ER diagrams, constraint rationale, deliberate index omissions, and 10 benchmark query profiles with real execution times can be found in [`docs/DATABASE.md`](docs/DATABASE.md).
-- **Architecture Decision Records**: Architectural rationale on database isolation and least privilege can be found in [`DECISIONS.md`](DECISIONS.md).
+- **Architecture Decision Records**: Architectural rationale on database isolation (ADR 001) and secure query execution architecture (ADR 002) can be found in [`DECISIONS.md`](DECISIONS.md).
