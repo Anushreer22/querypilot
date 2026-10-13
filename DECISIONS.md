@@ -73,4 +73,51 @@ We implement a four-layer defense-in-depth security model centered around strict
 - **Auditability**: Complete ledger of all query attempts with execution durations and rejection reasons.
 - **Strictness**: Highly complex non-standard PostgreSQL features (e.g. table-valued extensions, administrative commands) are intentionally blocked unless added to the explicit allowlists.
 
+---
+
+## ADR 003: LLM Provider Abstraction, Prompt-and-Repair Architecture, and Privacy Controls
+
+### Context
+In Phase 4, QueryPilot introduces AI-powered natural language to SQL translation (`POST /api/ask`). Allowing natural language queries to drive database operations creates unique failure modes:
+1. **Model Hallucinations & Syntax Mistakes**: Models may invent non-existent column names, use incorrect joins, or format invalid SQL syntax.
+2. **Provider Lock-in & Flakiness**: Cloud LLM APIs experience transient rate limits (HTTP 429) and outages (HTTP 5xx). Tight coupling to a proprietary SDK complicates testing and vendor changes.
+3. **Data Privacy**: Sending actual customer database rows or sensitive personal data to third-party LLMs introduces severe compliance and privacy risks.
+4. **Infinite Repair Loops**: Naive self-healing query flows can loop endlessly or drain tokens if a repair prompt generates another bad query.
+
+### Decision
+We implement a robust, privacy-first prompt-and-repair architecture:
+
+1. **LLM Client Abstraction Protocol**:
+   - Define a generic `LLMClient` protocol with one primary method: `complete_json(system_prompt, user_prompt, schema) -> dict`.
+   - Provide strongly typed exceptions (`LLMTimeout`, `LLMRateLimit`, `LLMInvalidResponse`, `LLMUnavailable`).
+   - Implement `OpenAILLMClient` via lightweight direct `httpx.AsyncClient` with exponential backoff on transient errors (HTTP 429, 5xx) with a max of 2 retries. Never retry invalid requests (400) or malformed JSON blindly.
+   - Implement `FakeLLM` for deterministic unit and integration testing without live cloud dependencies.
+   - Zero credential or raw secret logging.
+
+2. **Temperature 0.0 for Deterministic Code Generation**:
+   - Set `llm_temperature = 0.0` by default. SQL generation requires deterministic structural accuracy rather than creative variance.
+
+3. **Compact Schema Context & Zero Row Data**:
+   - Only schema metadata (table names, column types, primary keys, foreign keys, and status enum values) is passed to the LLM.
+   - Database row data is **never transmitted** to the LLM.
+   - Cached in-memory with a 5-minute TTL (`schema_cache_ttl_seconds = 300`) to eliminate database query overhead.
+
+4. **Single Repair Policy**:
+   - If an initial query fails validation or execution with a fixable error (syntax, validator rejection, unknown column), allow exactly **ONE** repair attempt.
+   - The repair prompt feeds the error message and the failed SQL back to the model.
+   - Timeouts and permission errors are **never repaired**.
+   - If the repair fails, the API immediately terminates with `422 Unprocessable Content`. Indefinite repair loops are forbidden.
+
+5. **Sanitized SQL Execution Only**:
+   - The execution engine executes **ONLY** the AST-regenerated `sanitized_sql` produced by `sqlglot`. Raw LLM output is never passed to PostgreSQL.
+
+6. **Comprehensive Audit Ledger**:
+   - All ask outcomes (`success`, `clarification`, `rejected`, `error`, `timeout`, `llm_failure`) are recorded in `query_history` on `querypilot_app` with `source = 'ask'`, capturing original and repaired queries, user question, explanation, and LLM latency.
+
+### Consequences
+- **Security & Privacy**: Zero risk of sensitive customer data leaking to third-party model providers. Complete resistance to prompt injection attacks executing arbitrary commands.
+- **Predictable Cost & Latency**: Maximum 2 model calls per user query (initial attempt + single repair), capped tokens, and exponential backoff prevent runaway API spend.
+- **Deterministic Testing**: `FakeLLM` allows thorough automated coverage of edge cases, repairs, and network failures in under 10 seconds.
+
+
 

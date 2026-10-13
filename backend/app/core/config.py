@@ -29,6 +29,19 @@ class Settings(BaseSettings):
     # CORS Allowed Origins
     cors_origins: str | list[str] = ["http://localhost:5173"]
 
+    # LLM Settings
+    llm_provider: str = "openai"
+    llm_model: str = "gpt-4o-mini"
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    llm_timeout_seconds: float = 30.0
+    llm_max_output_tokens: int = 1500
+    llm_temperature: float = 0.0
+
+    # Ask Endpoint & Security Controls
+    rate_limit_ask_per_minute: int = 10
+    schema_cache_ttl_seconds: int = 300
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:

@@ -37,3 +37,6 @@ target-version = "py311"
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+    "llm: Live external LLM integration tests (skipped by default)",
+]

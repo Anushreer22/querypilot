@@ -1,7 +1,17 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import BigInteger, CheckConstraint, DateTime, Integer, Numeric, String, Text, func
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -15,7 +25,7 @@ class QueryHistory(Base):
     __tablename__ = "query_history"
     __table_args__ = (
         CheckConstraint(
-            "status IN ('success', 'rejected', 'error', 'timeout')",
+            "status IN ('success', 'clarification', 'rejected', 'error', 'timeout', 'llm_failure')",
             name="ck_query_history_status_valid",
         ),
     )
@@ -33,3 +43,12 @@ class QueryHistory(Base):
         server_default=func.now(),
         index=True,
     )
+
+    # Phase 4: Ask & LLM Audit Fields
+    question: Mapped[str | None] = mapped_column(Text, nullable=True)
+    explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    repaired: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=func.false())
+    repair_sql: Mapped[str | None] = mapped_column(Text, nullable=True)
+    llm_provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    llm_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    llm_latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)

@@ -71,6 +71,13 @@ class QueryHistoryItem(BaseModel):
     row_count: int | None = None
     error_message: str | None = None
     created_at: datetime
+    question: str | None = None
+    explanation: str | None = None
+    repaired: bool = False
+    repair_sql: str | None = None
+    llm_provider: str | None = None
+    llm_model: str | None = None
+    llm_latency_ms: int | None = None
 
 
 class QueryHistoryResponse(BaseModel):

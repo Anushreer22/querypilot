@@ -164,6 +164,13 @@ async def log_query_history(
     duration_ms: float | None = None,
     row_count: int | None = None,
     error_message: str | None = None,
+    question: str | None = None,
+    explanation: str | None = None,
+    repaired: bool = False,
+    repair_sql: str | None = None,
+    llm_provider: str | None = None,
+    llm_model: str | None = None,
+    llm_latency_ms: int | None = None,
 ) -> int | None:
     """Record query attempt in querypilot_app database in an independent transaction.
 
@@ -171,11 +178,18 @@ async def log_query_history(
 
     Args:
         sql_text: Raw or sanitized SQL text (capped at 10,000 characters).
-        status: Execution status ('success', 'rejected', 'error', 'timeout').
-        source: Request origin (e.g. 'manual', 'agent').
+        status: Execution status ('success', 'clarification', 'rejected', 'error', 'timeout', 'llm_failure').
+        source: Request origin (e.g. 'manual', 'ask', 'agent').
         duration_ms: Duration in milliseconds.
         row_count: Number of rows returned.
         error_message: Error description if failed.
+        question: Natural language question asked (for Phase 4/5).
+        explanation: LLM-generated explanation.
+        repaired: Whether SQL was repaired after an initial validation/execution error.
+        repair_sql: The original SQL prior to repair (if repaired).
+        llm_provider: LLM provider name (e.g. 'openai').
+        llm_model: LLM model name (e.g. 'gpt-4o-mini').
+        llm_latency_ms: Latency of LLM invocation in milliseconds.
 
     Returns:
         The created history row ID, or None if logging failed.
@@ -189,6 +203,13 @@ async def log_query_history(
                 duration_ms=Decimal(str(round(duration_ms, 2))) if duration_ms is not None else None,
                 row_count=row_count,
                 error_message=error_message[:2000] if error_message else None,
+                question=question[:2000] if question else None,
+                explanation=explanation[:4000] if explanation else None,
+                repaired=repaired,
+                repair_sql=repair_sql[:10000] if repair_sql else None,
+                llm_provider=llm_provider[:50] if llm_provider else None,
+                llm_model=llm_model[:100] if llm_model else None,
+                llm_latency_ms=llm_latency_ms,
             )
             session.add(entry)
             await session.commit()
