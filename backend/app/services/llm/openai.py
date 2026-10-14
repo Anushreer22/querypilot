@@ -15,6 +15,8 @@ from app.services.llm.base import (
     LLMRateLimit,
     LLMTimeout,
     LLMUnavailable,
+    ToolCall,
+    ToolCompletionResult,
 )
 
 logger = logging.getLogger(__name__)
@@ -146,4 +148,127 @@ class OpenAILLMClient(LLMClient):
                     backoff *= 2.0
                     continue
                 raise LLMUnavailable(f"Network error connecting to OpenAI: {err}") from err
+
+    async def complete_with_tools(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+    ) -> ToolCompletionResult:
+        """Request completion with tools from OpenAI chat completions API."""
+        if not self.api_key:
+            raise LLMUnavailable(
+                "OpenAI API key is not configured. Set OPENAI_API_KEY in environment or use LLM_PROVIDER=fake."
+            )
+
+        url = f"{self.base_url}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        payload: dict[str, Any] = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": self.temperature,
+            "max_tokens": self.max_output_tokens,
+        }
+        if tools:
+            payload["tools"] = tools
+            payload["tool_choice"] = "auto"
+
+        retries = 0
+        backoff = INITIAL_BACKOFF_SECONDS
+
+        while True:
+            try:
+                async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+                    response = await client.post(url, headers=headers, json=payload)
+
+                if response.status_code in TRANSIENT_STATUS_CODES and retries < MAX_RETRIES:
+                    retries += 1
+                    logger.warning(
+                        "Transient error %d from OpenAI API in complete_with_tools on attempt %d. Retrying in %.2fs...",
+                        response.status_code,
+                        retries,
+                        backoff,
+                    )
+                    await asyncio.sleep(backoff)
+                    backoff *= 2.0
+                    continue
+
+                if response.status_code == 429:
+                    raise LLMRateLimit(
+                        f"OpenAI rate limit exceeded (HTTP 429): {response.text[:200]}",
+                        status_code=429,
+                    )
+
+                if response.status_code >= 500:
+                    raise LLMUnavailable(
+                        f"OpenAI service unavailable (HTTP {response.status_code}): {response.text[:200]}",
+                        status_code=response.status_code,
+                    )
+
+                if response.status_code != 200:
+                    raise LLMUnavailable(
+                        f"OpenAI API error (HTTP {response.status_code}): {response.text[:200]}",
+                        status_code=response.status_code,
+                    )
+
+                response_data = response.json()
+                choices = response_data.get("choices", [])
+                if not choices:
+                    raise LLMInvalidResponse("OpenAI returned response with no choices")
+
+                message_dict = choices[0].get("message", {})
+                raw_tool_calls = message_dict.get("tool_calls")
+                content = message_dict.get("content")
+
+                if raw_tool_calls:
+                    parsed_tool_calls: list[ToolCall] = []
+                    for tc in raw_tool_calls:
+                        call_id = tc.get("id", "")
+                        fn = tc.get("function", {})
+                        fn_name = fn.get("name", "")
+                        raw_args = fn.get("arguments", "{}")
+
+                        try:
+                            args_dict = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+                        except json.JSONDecodeError as err:
+                            raise LLMInvalidResponse(
+                                f"Failed to parse tool call arguments for '{fn_name}' as JSON: {err}"
+                            ) from err
+
+                        if not isinstance(args_dict, dict):
+                            raise LLMInvalidResponse(f"Tool call arguments for '{fn_name}' must be a JSON object")
+
+                        parsed_tool_calls.append(
+                            ToolCall(
+                                id=call_id,
+                                name=fn_name,
+                                arguments=args_dict,
+                            )
+                        )
+                    return ToolCompletionResult(tool_calls=parsed_tool_calls, content=content)
+
+                if content is not None:
+                    return ToolCompletionResult(tool_calls=None, content=content)
+
+                raise LLMInvalidResponse("OpenAI returned response with neither tool_calls nor content")
+
+            except httpx.TimeoutException as err:
+                raise LLMTimeout(
+                    f"OpenAI request timed out after {self.timeout_seconds} seconds"
+                ) from err
+            except (httpx.ConnectError, httpx.NetworkError) as err:
+                if retries < MAX_RETRIES:
+                    retries += 1
+                    logger.warning(
+                        "Network connection error to OpenAI API in complete_with_tools on attempt %d. Retrying in %.2fs...",
+                        retries,
+                        backoff,
+                    )
+                    await asyncio.sleep(backoff)
+                    backoff *= 2.0
+                    continue
+                raise LLMUnavailable(f"Network error connecting to OpenAI: {err}") from err
+
 

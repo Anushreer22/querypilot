@@ -26,26 +26,41 @@ STATUS_ENUM_VALUES = (
 )
 
 _cached_schema_text: str | None = None
+_cached_tables_data: dict[str, dict[str, Any]] | None = None
 _cached_timestamp: float = 0.0
 
 
 def invalidate_schema_context_cache() -> None:
     """Manually clear the cached schema context."""
-    global _cached_schema_text, _cached_timestamp
+    global _cached_schema_text, _cached_tables_data, _cached_timestamp
     _cached_schema_text = None
+    _cached_tables_data = None
     _cached_timestamp = 0.0
 
 
-def format_schema_description(tables_data: dict[str, dict[str, Any]]) -> str:
+def format_schema_description(
+    tables_data: dict[str, dict[str, Any]],
+    filter_table: str | None = None,
+) -> str:
     """Convert raw schema metadata into a compact, human-readable text prompt representation."""
-    lines: list[str] = [
-        "DATABASE SCHEMA (PostgreSQL 16, public schema only):",
-        "Only the following 4 tables exist. No other tables or schemas are available.",
-        "",
-    ]
+    target_table = filter_table.lower().strip() if filter_table else None
+
+    if target_table:
+        lines: list[str] = [
+            f"DATABASE SCHEMA FOR TABLE '{target_table}' (PostgreSQL 16, public schema only):",
+            "",
+        ]
+    else:
+        lines = [
+            "DATABASE SCHEMA (PostgreSQL 16, public schema only):",
+            "Only the following 4 tables exist. No other tables or schemas are available.",
+            "",
+        ]
 
     for table_name in sorted(tables_data.keys()):
         if table_name.lower() not in DEFAULT_ALLOWED_TABLES:
+            continue
+        if target_table and table_name.lower() != target_table:
             continue
 
         meta = tables_data[table_name]
@@ -82,7 +97,7 @@ def format_schema_description(tables_data: dict[str, dict[str, Any]]) -> str:
     return "\n".join(lines).strip()
 
 
-async def get_schema_context(force_refresh: bool = False) -> str:
+async def get_schema_context(force_refresh: bool = False, filter_table: str | None = None) -> str:
     """Fetch compact schema context with in-memory TTL caching.
 
     Guarantees:
@@ -90,12 +105,15 @@ async def get_schema_context(force_refresh: bool = False) -> str:
     - Restricted exclusively to allowed business tables (users, products, orders, order_items).
     - Caches result for settings.schema_cache_ttl_seconds.
     """
-    global _cached_schema_text, _cached_timestamp
+    global _cached_schema_text, _cached_tables_data, _cached_timestamp
     now = time.monotonic()
     ttl = settings.schema_cache_ttl_seconds
 
-    if not force_refresh and _cached_schema_text is not None and (now - _cached_timestamp) < ttl:
-        return _cached_schema_text
+    if not force_refresh and _cached_tables_data is not None and (now - _cached_timestamp) < ttl:
+        if filter_table:
+            return format_schema_description(_cached_tables_data, filter_table=filter_table)
+        if _cached_schema_text is not None:
+            return _cached_schema_text
 
     async with shop_engine.connect() as conn:
         def _inspect_schema(sync_conn) -> dict[str, dict[str, Any]]:
@@ -123,8 +141,12 @@ async def get_schema_context(force_refresh: bool = False) -> str:
 
         tables_data = await conn.run_sync(_inspect_schema)
 
-    formatted_text = format_schema_description(tables_data)
-    _cached_schema_text = formatted_text
+    _cached_tables_data = tables_data
+    _cached_schema_text = format_schema_description(tables_data)
     _cached_timestamp = now
-    return formatted_text
+
+    if filter_table:
+        return format_schema_description(tables_data, filter_table=filter_table)
+    return _cached_schema_text
+
 

@@ -1,18 +1,21 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import (
+    JSON,
     BigInteger,
     Boolean,
     CheckConstraint,
     DateTime,
+    ForeignKey,
     Integer,
     Numeric,
     String,
     Text,
     func,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -52,3 +55,75 @@ class QueryHistory(Base):
     llm_provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
     llm_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
     llm_latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class AgentRun(Base):
+    """Audit ledger for autonomous agent reasoning loops."""
+
+    __tablename__ = "agent_runs"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('completed', 'clarification', 'step_limit_exceeded', 'timeout', 'repeated_failure', 'error', 'llm_failure')",
+            name="ck_agent_runs_status_valid",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False)
+    final_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
+    step_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    total_duration_ms: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2), nullable=False, default=Decimal("0.0"), server_default="0.0"
+    )
+    llm_provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    llm_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
+
+    actions: Mapped[list["AgentAction"]] = relationship(
+        "AgentAction",
+        back_populates="run",
+        cascade="all, delete-orphan",
+        order_by="AgentAction.step_number",
+    )
+
+
+class AgentAction(Base):
+    """Action-level audit record for each tool invocation during an agent run."""
+
+    __tablename__ = "agent_actions"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('ok', 'error', 'rejected')",
+            name="ck_agent_actions_status_valid",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    run_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("agent_runs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    step_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    tool_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    arguments: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    result_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    duration_ms: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2), nullable=False, default=Decimal("0.0"), server_default="0.0"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    run: Mapped["AgentRun"] = relationship("AgentRun", back_populates="actions")
+

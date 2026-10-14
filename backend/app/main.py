@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.agent import router as agent_router
 from app.api.ask import router as ask_router
 from app.api.health import router as health_router
 from app.api.query import router as query_router
@@ -41,6 +42,7 @@ app.include_router(health_router)
 app.include_router(schema_router)
 app.include_router(query_router)
 app.include_router(ask_router)
+app.include_router(agent_router)
 
 if __name__ == "__main__":
     import sys

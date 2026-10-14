@@ -42,6 +42,12 @@ class Settings(BaseSettings):
     rate_limit_ask_per_minute: int = 10
     schema_cache_ttl_seconds: int = 300
 
+    # Agent Loop Controls (Phase 5)
+    agent_max_steps: int = 6
+    agent_timeout_seconds: float = 60.0
+    agent_send_row_preview: bool = True
+    rate_limit_agent_per_minute: int = 10
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:
