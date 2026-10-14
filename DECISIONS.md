@@ -221,6 +221,67 @@ Optimizing relational databases via AI introduces critical operational risks:
 - **Security**: Complete immunity to DDL injection and arbitrary execution vulnerabilities.
 - **Empirical Integrity**: Eliminates misleading claims of optimization by rejecting noise and verifying actual query planner adoption.
 
+---
+
+## ADR 006: Interactive Developer Dashboard, Virtualized Plain-Text Table Rendering, and Split Optimization Protocol
+
+### Context
+Phase 7 requires an interactive developer workspace and query optimization dashboard built on top of the Phase 1–6 backend APIs (`/health`, `/api/schema`, `/api/query/execute`, `/api/query/history`, `/api/ask`, `/api/agent/ask`, `/api/agent/runs`, `/api/optimize`).
+
+Developing a high-performance database client in the browser introduces specific security, UX, and performance requirements:
+1. **DOM Injection & XSS from Database Cell Values**: SQL queries can return arbitrary untrusted strings (e.g. `<img src=x onerror=alert(1)>`, malicious scripts) from user-generated content in `sample_shop`. Rendering cell content via HTML or unescaped templates would expose users to cross-site scripting (XSS).
+2. **DOM Freezes from Large Query Result Sets**: While the backend clamps ad-hoc query results at 1,000 rows, rendering 1,000 unvirtualized `<tr>`/`<td>` elements with 10–20 columns creates 10,000–20,000 DOM nodes, causing jank, high memory usage, and slow scrolling.
+3. **Expensive Editor Bundle Weight**: Monaco Editor (`@monaco-editor/react`) is feature-rich but adds significant JavaScript weight. Eagerly bundling it with the initial render harms initial page load time.
+4. **Server-State Cache Cohesion & Error Handling**: With 9 endpoints covering health polling, schema exploration, natural language generation, agent reasoning, and optimization, relying on raw `fetch` calls scattered across React components leads to race conditions, inconsistent retry states, and poor error UX.
+5. **Accidental Benchmark Stress**: While query plan analysis (`EXPLAIN`) is lightweight (~100ms), database benchmarking (`sample_shop_bench` clone execution across 7 iterations) incurs heavy CPU and disk I/O. Triggering benchmarks accidentally or without explicit confirmation would degrade host performance.
+
+### Decision
+
+1. **Strict Plain-Text Table Cell Rendering Invariant**:
+   - Every database value in `ResultsTable` is rendered strictly as a primitive React text node `{formatted}`.
+   - `dangerouslySetInnerHTML` is prohibited across the entire frontend application.
+   - Unit tests explicitly verify that a cell value containing `<img src=x onerror=alert("pwned")>` renders strictly as literal text, and that no `<img>` HTML element exists in the DOM.
+
+2. **Row Virtualization via TanStack Virtual for 1,000-Row Capped Datasets**:
+   - We utilize `@tanstack/react-virtual` to virtualize table rows in `ResultsTable`.
+   - Only the rows visible in the viewport plus an overscan buffer of 15 rows are mounted in the DOM, keeping scrolling 60fps smooth even on large query results.
+   - For non-layout environments (e.g., JSDOM in unit tests), a zero-height fallback renders the initial slice of rows directly so tests and headless runs execute without synthetic layout measurements.
+
+3. **Lazy-Loaded Monaco Editor**:
+   - Monaco Editor is lazy-loaded with PostgreSQL syntax highlighting, line numbers, and dark theme support.
+   - Global keyboard shortcut `Ctrl+Enter` / `Cmd+Enter` immediately dispatches query execution.
+   - Clicking a table or column name in the left schema browser automatically appends or replaces text in the active editor buffer.
+
+4. **TanStack React Query for Server-State & Unified `ApiClientError`**:
+   - All data fetching and caching are managed with TanStack React Query (`useQuery`), isolating server state from local UI state.
+   - A centralized `ApiClientError` class categorizes backend responses:
+     - `422 Unprocessable Entity`: Formatted as "SQL Rejected" with specific AST validator reasons.
+     - `400 Bad Request`: Formatted as "SQL Execution Error" with PostgreSQL syntax diagnostics.
+     - `409 Conflict`: Formatted as "Benchmark Conflict" explaining that another run is active on `sample_shop_bench`.
+     - `429 Too Many Requests`: Prompts the user with rate limit retry windows.
+     - `504 Gateway Timeout`: Informs the user that statement execution exceeded the 5000ms safety timeout.
+     - `502 / 503 Unavailable`: Gracefully displays AI provider or database connection failures.
+     - Network errors (`statusCode: 0`): Highlights backend reachability failures.
+
+5. **Two-Stage Optimization Flow with Clear Empirical Badges**:
+   - The "Plan & Optimization" tab strictly separates fast read-only plan analysis (default, ~100ms) from multi-iteration benchmark execution.
+   - Running a benchmark on `sample_shop_bench` requires explicit confirmation via `ConfirmModal` explaining iteration counts and execution on the benchmark copy database.
+   - Benchmarks can be cancelled at any moment via `AbortController`.
+   - Before/after metrics use visually distinct badges:
+     - **`MEASURED`** (pulsing emerald badge) when verified through the full benchmark protocol.
+     - **`ESTIMATED`** (amber badge) when projected by cost models without physical benchmarking.
+
+6. **Dual-Mode Workspace ("Ask" vs. "SQL Editor")**:
+   - **Ask Mode**: Conversational interface supporting both the Phase 5 multi-step tool-calling Agent (`/api/agent/ask`) and the Phase 4 Simple prompt-and-repair flow (`/api/ask`).
+   - Renders the step-by-step reasoning timeline with ok/error/rejected badges, duration, expandable arguments/results, synthesized answers, and interactive clarification buttons.
+   - **SQL Editor Mode**: Professional SQL IDE with syntax highlighting, run actions, and one-click transfer into the optimizer panel.
+
+### Consequences
+- **Security**: Complete protection against DOM-based XSS when browsing arbitrary database contents.
+- **Performance**: Instant initial load with sub-100ms response times and smooth 60fps virtualized scrolling over 1,000 rows.
+- **Developer Experience**: Fast, ergonomic feedback loop for crafting, debugging, and optimizing database queries.
+
+
 
 
 

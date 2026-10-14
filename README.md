@@ -142,7 +142,7 @@ backend\.venv\Scripts\python.exe backend\scripts\seed_shop.py
 
 ---
 
-### 6. Frontend Setup
+### 6. Frontend Setup & Developer Dashboard (Phase 7)
 
 In a separate terminal:
 
@@ -152,7 +152,43 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser. The page displays real-time health for the FastAPI backend, `querypilot_app` database, and `sample_shop` database.
+Open [http://localhost:5173](http://localhost:5173) in your browser. The application loads the full interactive QueryPilot developer workspace:
+- **Header**: Live polling backend and database connectivity status (`GET /health`).
+- **Left Sidebar (Schema Browser)**: Collapsible table catalog (`users`, `products`, `orders`, `order_items`), column data types, Primary/Foreign Key badges, column search, and one-click identifier insertion into the active editor.
+- **Main Workspace (Dual Mode)**:
+  - **Ask Mode**: Conversational AI query panel supporting both the **Agent** (`/api/agent/ask`) and **Simple** (`/api/ask`) engines. Displays step-by-step reasoning timelines, duration metrics, tool status badges (`ok`, `error`, `rejected`), expandable arguments and results, synthesized answers, and interactive clarification prompt chips.
+  - **SQL Editor Mode**: Lazy-loaded Monaco Editor with PostgreSQL syntax highlighting, `Ctrl+Enter` / `Cmd+Enter` execution shortcut, limit injection indicators, and a one-click "Send to Optimizer" action.
+- **Bottom Inspector Panel**:
+  - **Results Tab**: High-performance virtualized table powered by TanStack Virtual (smooth 60fps scrolling over 1,000 rows), duration and row count badges, truncation warnings, and Copy/Download CSV exports.
+  - **Plan & Optimization Tab**: Fast read-only plan bottleneck analysis (~100ms) and isolated safe benchmark runner on `sample_shop_bench` with confirmation dialog, cancellation support (`AbortController`), and prominent **`MEASURED`** vs. **`ESTIMATED`** performance badges.
+  - **History Tab**: Paginated query execution audit trail with status filters (*All*, *Success*, *Rejected*, *Error*, *Timeout*, *Clarification*) and "Load into Editor" actions.
+
+#### Frontend Scripts
+```bash
+# Start Vite development server at http://localhost:5173
+npm run dev
+
+# Run Vitest unit & integration test suites
+npm run test
+
+# Type-check TypeScript codebase
+npm run typecheck
+
+# Run ESLint flat configuration checks
+npm run lint
+
+# Format codebase with Prettier
+npm run format
+
+# Regenerate TypeScript types from backend OpenAPI specification
+npm run generate:types
+
+# Build production bundle
+npm run build
+```
+
+#### Frontend Screenshots
+*(UI Screenshots placeholder: `./docs/screenshots/dashboard-ask.png` and `./docs/screenshots/dashboard-optimizer.png`)*
 
 ---
 
@@ -299,7 +335,8 @@ curl -s -i -X POST http://127.0.0.1:8000/api/optimize \
 
 ### 11. Running Automated Tests
 
-Run the complete test suite across health checks, schema constraints, security roles, AST validation, execution safeguards, LLM abstraction, prompt generator, ask API, agent tools, reasoning loop, agent API, plan analyzer, index advisor, isolated benchmark runner, and optimizer API:
+#### Backend Test Suite (Pytest)
+Run the complete backend test suite across health checks, schema constraints, security roles, AST validation, execution safeguards, LLM abstraction, prompt generator, ask API, agent tools, reasoning loop, agent API, plan analyzer, index advisor, isolated benchmark runner, and optimizer API:
 
 ```powershell
 backend\.venv\Scripts\pytest backend\tests -v
@@ -325,6 +362,21 @@ Tests include:
 - `test_shop_permissions.py`: Verifies `readonly_user` can execute `SELECT` but is strictly blocked from `INSERT`, `UPDATE`, `DELETE`, and `DROP TABLE`.
 - `test_shop_seed.py`: Runs `--small` seed mode, verifies row counts, and verifies that `orders.total_amount == sum(quantity * unit_price)` for 100% of orders.
 
+#### Frontend Test Suite (Vitest + React Testing Library + MSW)
+Run the automated frontend unit and integration tests:
+
+```bash
+cd frontend
+npm run test
+```
+
+Frontend tests include:
+- `client.test.ts`: Unified `ApiClientError` mapping for HTTP 400, 409, 422, 429, 503, and network failure responses with user-friendly messages.
+- `ResultsTable.test.tsx`: Virtualized table rendering, sticky headers, formatted dates/numbers/nulls, and **critical security test** proving malicious strings (`<img src=x onerror=alert("pwned")>`) render strictly as raw text nodes without HTML element injection.
+- `AgentTimeline.test.tsx`: Step-by-step reasoning timeline, status badge indicators (`ok`, `error`, `rejected`), expandable arguments/results, and run reloading.
+- `OptimizerPanel.test.tsx`: Fast read-only plan analysis, detected bottleneck badges, index recommendation review, and confirmation dialog for benchmarks.
+- `HistoryPanel.test.tsx`: Audit ledger list rendering, status filtering tabs (*All*, *Success*, *Rejected*, *Error*, *Timeout*, *Clarification*), and click-to-load editor callback.
+
 ---
 
 ## Detailed Documentation & Query Profiles
@@ -335,6 +387,7 @@ Tests include:
 - **Prompt Engineering & Repair Policy**: Prompt templates, XML delimiters, JSON schema contract, and single-repair strategy are documented in [`docs/PROMPTS.md`](docs/PROMPTS.md).
 - **Security Architecture & Threat Model**: Defense-in-depth layers, AST validation rules, function allowlists, and threat matrix are detailed in [`docs/SECURITY.md`](docs/SECURITY.md).
 - **Database Schema & Deliberate Index Omissions**: Full Mermaid ER diagrams, constraint rationale, deliberate index omissions, and 10 benchmark query profiles with real execution times can be found in [`docs/DATABASE.md`](docs/DATABASE.md).
-- **Architecture Decision Records**: Architectural rationale on database isolation (ADR 001), secure query execution architecture (ADR 002), LLM prompt-and-repair architecture (ADR 003), autonomous tool-calling agent architecture (ADR 004), and query optimization / benchmark runner architecture (ADR 005) can be found in [`DECISIONS.md`](DECISIONS.md).
+- **Architecture Decision Records**: Architectural rationale on database isolation (ADR 001), secure query execution architecture (ADR 002), LLM prompt-and-repair architecture (ADR 003), autonomous tool-calling agent architecture (ADR 004), query optimization / benchmark runner architecture (ADR 005), and frontend dashboard / virtualized table architecture (ADR 006) can be found in [`DECISIONS.md`](DECISIONS.md).
+
 
 

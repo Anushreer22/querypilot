@@ -28,7 +28,32 @@ export const HealthStatus: React.FC = () => {
   };
 
   useEffect(() => {
-    checkHealth();
+    let mounted = true;
+    (async () => {
+      try {
+        const data = await getHealth();
+        if (mounted) {
+          setHealth(data);
+          setLastUpdated(new Date());
+        }
+      } catch (err: unknown) {
+        if (mounted) {
+          if (err instanceof Error) {
+            setError(err.message);
+          } else {
+            setError("Failed to connect to backend server.");
+          }
+          setHealth(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
