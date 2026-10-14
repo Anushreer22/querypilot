@@ -176,3 +176,35 @@ async def test_tool_registry_unknown_tool_and_invalid_args():
     invalid_args_res = await registry.execute("validate_sql", {})
     assert invalid_args_res["ok"] is False
     assert "Invalid arguments" in invalid_args_res["error"]
+
+
+@pytest.mark.asyncio
+async def test_analyze_query_plan_tool_valid():
+    """Test analyze_query_plan returns plan findings and index suggestions without executing DDL."""
+    from app.agent.tools.analyze_query_plan import analyze_query_plan_tool
+
+    result = await analyze_query_plan_tool.handler(
+        analyze_query_plan_tool.args_schema(
+            sql="SELECT id, total_amount FROM orders WHERE created_at >= '2026-01-01' LIMIT 20;"
+        )
+    )
+    assert result["ok"] is True
+    assert "findings" in result
+    assert "suggestions" in result
+    assert "total_cost" in result
+    assert "summary" in result
+
+
+@pytest.mark.asyncio
+async def test_analyze_query_plan_tool_rejected():
+    """Test analyze_query_plan returns structured error on invalid/rejected SQL."""
+    from app.agent.tools.analyze_query_plan import analyze_query_plan_tool
+
+    result = await analyze_query_plan_tool.handler(
+        analyze_query_plan_tool.args_schema(
+            sql="DROP TABLE users;"
+        )
+    )
+    assert result["ok"] is False
+    assert "error" in result
+

@@ -29,6 +29,20 @@ shop_engine: AsyncEngine = create_async_engine(
     echo=False,
 )
 
+# Engine 3: sample_shop_bench with readonly_user role (isolated benchmark query runs)
+bench_engine: AsyncEngine = create_async_engine(
+    settings.bench_database_url,
+    pool_pre_ping=True,
+    echo=False,
+)
+
+# Engine 4: sample_shop_bench with postgres admin role (for index creation / cleanup ONLY)
+bench_admin_engine: AsyncEngine = create_async_engine(
+    settings.bench_admin_database_url,
+    pool_pre_ping=True,
+    echo=False,
+)
+
 # Session makers
 AppAsyncSessionLocal = async_sessionmaker(
     bind=app_engine,

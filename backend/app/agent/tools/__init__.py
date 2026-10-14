@@ -1,5 +1,6 @@
 """Agent tools package and default registry initialization."""
 
+from app.agent.tools.analyze_query_plan import analyze_query_plan_tool
 from app.agent.tools.base import Tool, ToolRegistry
 from app.agent.tools.execute_query import execute_readonly_query_tool
 from app.agent.tools.explain_query import explain_query_tool
@@ -16,12 +17,14 @@ def get_default_tool_registry() -> ToolRegistry:
     registry.register(execute_readonly_query_tool)
     registry.register(explain_query_tool)
     registry.register(get_query_history_tool)
+    registry.register(analyze_query_plan_tool)
     return registry
 
 
 __all__ = [
     "Tool",
     "ToolRegistry",
+    "analyze_query_plan_tool",
     "execute_readonly_query_tool",
     "explain_query_tool",
     "get_default_tool_registry",
@@ -29,3 +32,4 @@ __all__ = [
     "inspect_schema_tool",
     "validate_sql_tool",
 ]
+

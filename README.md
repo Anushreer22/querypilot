@@ -259,11 +259,47 @@ curl -s http://127.0.0.1:8000/api/agent/runs/<RUN_ID>
 curl -s "http://127.0.0.1:8000/api/agent/runs?limit=10"
 ```
 
+### 10. Query Optimization & Isolated Benchmark API (Phase 6)
+
+QueryPilot includes an automated query optimization and benchmarking engine (`POST /api/optimize`). It performs deep AST-based query plan analysis via `EXPLAIN (ANALYZE, BUFFERS)` (strictly rolled back), detects 6 categories of operational bottlenecks, constructs safe DDL indexes using verified schema identifiers, and benchmarks performance improvements on an isolated copy database (`sample_shop_bench`).
+
+Crucially, QueryPilot separates **`MEASURED`** speedups (exceeding host noise $2\sigma$ with verified planner index adoption and MD5 result set match) from **`ESTIMATED`** planner improvements.
+
+| Method | Endpoint | Description | Status Codes |
+|---|---|---|---|
+| `POST` | `/api/optimize` | Analyzes execution plan, suggests indexes, and optionally benchmarks on `sample_shop_bench` | `200`, `409`, `422`, `429`, `503` |
+
+#### Git Bash / cURL Examples
+
+```bash
+# 1. Fast Plan Analysis & Index Suggestions (~100ms, benchmark=false)
+curl -s -X POST http://127.0.0.1:8000/api/optimize \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sql": "SELECT id, user_id, status, total_amount, created_at FROM orders WHERE created_at >= '\''2026-01-01'\'' ORDER BY created_at DESC LIMIT 50;",
+    "benchmark": false
+  }'
+
+# 2. Complete Isolated Benchmark Protocol (runs on sample_shop_bench, clean teardown)
+curl -s -X POST http://127.0.0.1:8000/api/optimize \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sql": "SELECT id, user_id, status, total_amount, created_at FROM orders WHERE created_at >= '\''2026-01-01'\'' ORDER BY created_at DESC LIMIT 50;",
+    "benchmark": true,
+    "iterations": 7
+  }'
+
+# 3. Security Rejection (mutations and unvalidated SQL are blocked before reaching planner)
+curl -s -i -X POST http://127.0.0.1:8000/api/optimize \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "DELETE FROM users WHERE id = 1;", "benchmark": false}'
+```
+
 ---
 
-### 10. Running Automated Tests
+### 11. Running Automated Tests
 
-Run the complete test suite across health checks, schema constraints, security roles, AST validation, execution safeguards, LLM abstraction, prompt generator, ask API, agent tools, reasoning loop, and agent API:
+Run the complete test suite across health checks, schema constraints, security roles, AST validation, execution safeguards, LLM abstraction, prompt generator, ask API, agent tools, reasoning loop, agent API, plan analyzer, index advisor, isolated benchmark runner, and optimizer API:
 
 ```powershell
 backend\.venv\Scripts\pytest backend\tests -v
@@ -278,9 +314,13 @@ Tests include:
 - `test_llm_client.py`: Tests LLM client abstraction, exponential backoff retries on transient errors (429, 5xx), error mappings, and FakeLLM scriptability.
 - `test_sql_generator.py`: Prompt builder testing, safety XML delimiters, JSON output contract validation, and one-shot JSON correction retry.
 - `test_ask_api.py`: Complete `/api/ask` integration testing: normal question execution, clarification flow (no SQL), one-shot repair upon validator rejection, failed repair rejection (422), prompt injection containment, zero write on INSERT, rate limiting (429), and audit ledger persistence.
-- `test_agent_tools.py`: Unit tests for all 5 agent tools (`inspect_schema`, `validate_sql`, `execute_readonly_query`, `explain_query`, `get_query_history`) and tool registry argument validation and error encapsulation.
+- `test_agent_tools.py`: Unit tests for all agent tools (`inspect_schema`, `validate_sql`, `execute_readonly_query`, `explain_query`, `get_query_history`, `analyze_query_plan`) and tool registry argument validation.
 - `test_agent_loop.py`: Reasoning loop unit tests: multi-step tool sequence, clarification flow, error recovery, step limit stop (422), repeated failure stop (422), timeout abort (504), prompt injection boundary isolation, and audit ledger persistence.
 - `test_agent_api.py`: End-to-end API integration tests for `/api/agent/ask`, `/api/agent/runs/{run_id}`, and `/api/agent/runs` covering all HTTP status mappings (200, 422, 504, 503, 429, 404).
+- `test_plan_analyzer.py`: Unit and integration tests for plan tree parsing, 6 bottleneck detection rules, and proof that mutations (`INSERT`) are blocked before `EXPLAIN ANALYZE`.
+- `test_index_advisor.py`: Application DDL generation, identifier allowlisting, composite column ordering (equality first), and catalog deduplication.
+- `test_benchmark.py`: Benchmark iteration statistics (median, p95, stddev), concurrency lock, $2\sigma$ noise barrier, MD5 result set verification, and guaranteed index teardown.
+- `test_optimize_api.py`: Route integration tests for `POST /api/optimize` covering 200 (with/without benchmark), 409 (concurrency lock), 422 (validation rejection), 429 (rate limit), 503 (bench DB unreachable), and `optimization_history` audit persistence.
 - `test_shop_schema.py`: Schema validation, foreign keys, and check constraints.
 - `test_shop_permissions.py`: Verifies `readonly_user` can execute `SELECT` but is strictly blocked from `INSERT`, `UPDATE`, `DELETE`, and `DROP TABLE`.
 - `test_shop_seed.py`: Runs `--small` seed mode, verifies row counts, and verifies that `orders.total_amount == sum(quantity * unit_price)` for 100% of orders.
@@ -289,9 +329,12 @@ Tests include:
 
 ## Detailed Documentation & Query Profiles
 
+- **Query Optimization & Benchmark Architecture**: Plan finding detectors, safe DDL construction, copy database isolation, and $2\sigma$ noise math are detailed in [`docs/OPTIMIZATION.md`](docs/OPTIMIZATION.md).
+- **Optimization & Benchmark Report**: Empirical results and case studies comparing baseline vs. optimized queries across 500k orders are published in [`docs/OPTIMIZATION_REPORT.md`](docs/OPTIMIZATION_REPORT.md).
 - **Agent Architecture & Reasoning Loop**: Loop sequence diagrams, tool catalog, trust boundaries, and stop conditions are detailed in [`docs/AGENT.md`](docs/AGENT.md).
 - **Prompt Engineering & Repair Policy**: Prompt templates, XML delimiters, JSON schema contract, and single-repair strategy are documented in [`docs/PROMPTS.md`](docs/PROMPTS.md).
 - **Security Architecture & Threat Model**: Defense-in-depth layers, AST validation rules, function allowlists, and threat matrix are detailed in [`docs/SECURITY.md`](docs/SECURITY.md).
 - **Database Schema & Deliberate Index Omissions**: Full Mermaid ER diagrams, constraint rationale, deliberate index omissions, and 10 benchmark query profiles with real execution times can be found in [`docs/DATABASE.md`](docs/DATABASE.md).
-- **Architecture Decision Records**: Architectural rationale on database isolation (ADR 001), secure query execution architecture (ADR 002), LLM prompt-and-repair architecture (ADR 003), and autonomous tool-calling agent architecture (ADR 004) can be found in [`DECISIONS.md`](DECISIONS.md).
+- **Architecture Decision Records**: Architectural rationale on database isolation (ADR 001), secure query execution architecture (ADR 002), LLM prompt-and-repair architecture (ADR 003), autonomous tool-calling agent architecture (ADR 004), and query optimization / benchmark runner architecture (ADR 005) can be found in [`DECISIONS.md`](DECISIONS.md).
+
 

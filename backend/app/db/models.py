@@ -127,3 +127,29 @@ class AgentAction(Base):
 
     run: Mapped["AgentRun"] = relationship("AgentRun", back_populates="actions")
 
+
+class OptimizationHistory(Base):
+    """Audit ledger for query plan analysis and optimization benchmark runs."""
+
+    __tablename__ = "optimization_history"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    sql_text: Mapped[str] = mapped_column(Text, nullable=False)
+    findings_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    suggestions_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    benchmarked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    baseline_median_ms: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    optimized_median_ms: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    speedup_factor: Mapped[Decimal | None] = mapped_column(Numeric(6, 2), nullable=True)
+    improvement_label: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    duration_ms: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2), nullable=False, default=Decimal("0.0"), server_default="0.0"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
+
+

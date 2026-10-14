@@ -26,6 +26,20 @@ class Settings(BaseSettings):
         "postgresql+psycopg://postgres:querypilot_postgres_pass@127.0.0.1:5436/sample_shop"
     )
 
+    # Benchmark Database Connections (Phase 6 - isolated copy database)
+    bench_database_url: str = (
+        "postgresql+psycopg://readonly_user:querypilot_readonly_pass@127.0.0.1:5436/sample_shop_bench"
+    )
+    bench_admin_database_url: str = (
+        "postgresql+psycopg://postgres:querypilot_postgres_pass@127.0.0.1:5436/sample_shop_bench"
+    )
+
+    # Optimizer & Benchmark Controls (Phase 6)
+    rate_limit_optimize_per_minute: int = 5
+    benchmark_default_iterations: int = 7
+    benchmark_max_iterations: int = 15
+    benchmark_timeout_seconds: float = 60.0
+
     # CORS Allowed Origins
     cors_origins: str | list[str] = ["http://localhost:5173"]
 
