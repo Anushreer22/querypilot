@@ -41,11 +41,18 @@ class Settings(BaseSettings):
     # CORS Allowed Origins
     cors_origins: str | list[str] = ["http://localhost:5173"]
 
+    # Environment & Deployment Mode (Phase 8B)
+    environment: str = "development"
+    demo_mode: bool = False
+    benchmark_enabled: bool = True
+    daily_llm_call_cap: int = 0  # 0 = disabled (unlimited in dev); set to 200 in production demo
+
     # LLM Settings
     llm_provider: str = "openai"
     llm_model: str = "gpt-4o-mini"
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
+    gemini_api_key: str = ""
     llm_timeout_seconds: float = 30.0
     llm_max_output_tokens: int = 1500
     llm_temperature: float = 0.0

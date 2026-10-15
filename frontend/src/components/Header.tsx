@@ -26,6 +26,11 @@ export const Header: React.FC = () => {
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 font-mono">
                 v0.1.0
               </span>
+              {import.meta.env.VITE_DEMO_MODE === "true" && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-700/60 font-semibold tracking-wide uppercase">
+                  Demo
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-slate-400 leading-none">AI Database Engineer & Optimizer</p>
           </div>

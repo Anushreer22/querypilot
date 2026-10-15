@@ -13,11 +13,11 @@ from app.services.optimizer.benchmark import _benchmark_lock
 
 
 @pytest.fixture(autouse=True)
-async def reset_rate_limiter():
-    """Clear in-memory rate limiter history before each test."""
-    async with _optimize_rate_limiter._lock:
-        _optimize_rate_limiter._history.clear()
+def reset_rate_limiter():
+    """Clear in-memory rate limiter history before and after each test."""
+    _optimize_rate_limiter._history.clear()
     yield
+    _optimize_rate_limiter._history.clear()
 
 
 @pytest.mark.asyncio

@@ -1,4 +1,7 @@
 services:
+  # ============================================================================
+  # Core Database Service (Active by default for local development)
+  # ============================================================================
   postgres:
     image: postgres:16-alpine
     container_name: querypilot-postgres
@@ -21,7 +24,51 @@ services:
       retries: 5
       start_period: 10s
 
+  # ============================================================================
+  # Backend API Service (Optional: docker compose --profile full up)
+  # ============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: querypilot-backend
+    profiles: ["full", "fullstack"]
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: "8000"
+      ENVIRONMENT: "production"
+      APP_DATABASE_URL: "postgresql+psycopg://app_rw:${APP_RW_PASSWORD}@postgres:5432/querypilot_app"
+      SHOP_DATABASE_URL: "postgresql+psycopg://readonly_user:${READONLY_PASSWORD}@postgres:5432/sample_shop"
+      SHOP_ADMIN_DATABASE_URL: "postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/sample_shop"
+      CORS_ORIGINS: "http://localhost:5173,http://localhost:3000,http://localhost:80"
+      DEMO_MODE: "true"
+      BENCHMARK_ENABLED: "false"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ============================================================================
+  # Frontend Static Web Server (Optional: docker compose --profile full up)
+  # ============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "http://localhost:8000"
+        VITE_DEMO_MODE: "true"
+    container_name: querypilot-frontend
+    profiles: ["full", "fullstack"]
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
     name: querypilot_postgres_data
-

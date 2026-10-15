@@ -125,6 +125,7 @@ async def _log_optimization_run(
         200: {
             "description": "Plan analyzed and recommendations generated (with benchmark if requested)"
         },
+        403: {"description": "Benchmarking disabled in public demo environment"},
         409: {"description": "Benchmark lock conflict - another benchmark is currently running"},
         422: {"description": "SQL validation rejected or invalid AST"},
         429: {"description": "Rate limit exceeded (max 5 requests per minute)"},
@@ -188,6 +189,12 @@ async def optimize_query(payload: OptimizeRequest, request: Request) -> Optimize
 
     # 5. Optional benchmarking protocol on sample_shop_bench
     if payload.benchmark:
+        if not settings.benchmark_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Query benchmarking is disabled on the public demo instance to conserve cloud resources. Plan analysis and index suggestions are fully available.",
+            )
+
         if _benchmark_lock.locked():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,

@@ -98,6 +98,9 @@ describe("api client and ApiClientError mapping", () => {
 
   it("maps network connection error (status 0) when server is down", async () => {
     server.use(
+      http.get("*/ready", () => {
+        return HttpResponse.error();
+      }),
       http.get("*/health", () => {
         return HttpResponse.error();
       })

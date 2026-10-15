@@ -320,6 +320,51 @@ Following Phases 1 through 7, QueryPilot contains a full-stack NL-to-SQL system 
 - **Traceability**: All requests and agent reasoning steps are traceable via correlated `request_id` and `run_id` without sensitive data leakage in log sinks.
 - **Reproducibility**: Changes to models, prompts, or validators can be instantly verified against the 30-question evaluation benchmark in under 5 seconds with FakeLLM, or against live models on demand.
 
+---
+
+## ADR 008: Production Containerization, CI/CD Pipeline, and Public Demo Safeguards
+
+### Status
+Accepted
+
+### Context
+Transitioning QueryPilot from local workstation development (Docker PostgreSQL on port 5436) to a publicly accessible developer demo requires:
+1. **Target Infrastructure**: Hosting the React SPA on Vercel Edge, the containerized FastAPI backend on Render, and databases on Neon Serverless PostgreSQL (free tier).
+2. **Quota & Storage Constraints**: Neon's free tier provides a 500 MB storage cap and compute scaling to zero. Uncontrolled benchmark index creation, large synthetic datasets, or runaway LLM queries could rapidly exceed storage or billing limits.
+3. **Continuous Integration Matrix**: Automated GitHub Actions pipeline to enforce code style, security audits, static type checking, unit/integration test coverage with PostgreSQL service containers, and deterministic evaluation benchmarks.
+4. **Defense-in-Depth for Public Demo**: Hardening production containers (non-root users, multi-stage builds), separating health checks into fast liveness and deep readiness probes, restricting CORS, and enforcing daily query budgets.
+
+### Decision
+1. **Multi-Stage Containerization (`backend/Dockerfile`, `frontend/Dockerfile`)**:
+   - `backend/Dockerfile`: Multi-stage build based on `python:3.12-slim`. Stage 1 compiles wheel dependencies; Stage 2 copies wheels into a slim runtime without build tools. Runs under non-privileged system user `appuser` (UID 1000). Dynamically maps `$PORT` (Render requirement) and implements native curl health checking.
+   - `frontend/vercel.json`: Edge routing configuration providing client-side SPA fallback rewrites and security response headers.
+   - `docker-compose.yml`: Enhanced with optional `profiles: ["full"]` to run the entire backend + frontend + DB stack locally while keeping default local database workflows unchanged.
+
+2. **Automated GitHub Actions CI/CD Pipeline (`.github/workflows/ci.yml`, `eval-live.yml`)**:
+   - Three concurrent jobs in `ci.yml`:
+     * `backend`: Python 3.12, PG16 service container, dual Alembic migrations (`querypilot_app` & `sample_shop`), `--small` deterministic seeding, `ruff check`, `mypy`, `pytest` with XML coverage artifacts, and `pip-audit` vulnerability scanning.
+     * `frontend`: Node 20 LTS, npm caching, `npm ci`, ESLint, TypeScript compiler verification, Vitest suite, production Vite build, and `npm audit`.
+     * `eval-offline`: Deterministic 30-question evaluation benchmark execution with FakeLLM scoring result sets and uploading evaluation reports.
+   - `eval-live.yml`: Isolated, manual `workflow_dispatch` pipeline using repository secret `OPENAI_API_KEY` for on-demand live model evaluation without running on pull requests.
+
+3. **Public Demo Safeguards & Quota Controls**:
+   - **Storage Optimization (`--medium` seed mode)**: `backend/scripts/seed_shop.py` enhanced with `--medium` generating 10,000 users, 1,000 products, 100,000 orders, and ~300,000 order items (~65 MB storage footprint), maintaining realistic sequential scan bottlenecks while consuming only ~13% of Neon's 500 MB quota.
+   - **DDL Benchmark Isolation**: Public demo enforces `BENCHMARK_ENABLED=false`, returning HTTP 403 Forbidden with clear explanatory guidance if full candidate index benchmarking is requested. Read-only EXPLAIN ANALYZE plan bottleneck analysis and index recommendations remain fully active.
+   - **Daily Query Budget Guard**: Enforces `DAILY_LLM_CALL_CAP=200` by querying today's LLM-driven query history count. Reaching the cap gracefully responds with HTTP 429 Too Many Requests to protect API quotas.
+   - **Strict Production Lifespan Gate**: In `settings.environment == "production"`, FastAPI startup verifies that CORS origins contain no wildcards `*`, required LLM provider API keys are present, and the database connection actively enforces `default_transaction_read_only = on` by attempting and asserting rejection of a test write.
+   - **Probe Separation**: `/health` serves as a lightweight liveness probe (HTTP 200 without database overhead), preventing container restart loops. `/ready` serves as a readiness probe verifying live connectivity to both `querypilot_app` and `sample_shop`.
+
+4. **Production Configuration & Infrastructure as Code**:
+   - `.env.production.example` documents all required production environment variables.
+   - `docker/production/setup_roles.sql` provides verified PostgreSQL DDL for Neon cluster role creation (`app_rw` and `readonly_user`).
+   - `render.yaml` declares Render Infrastructure-as-Code web service blueprint.
+   - `backend/scripts/smoke_test.py` provides end-to-end automated deployment smoke testing across health, readiness, catalog, safe SELECT, security AST rejection, and ambiguity clarification.
+
+### Consequences
+- **Zero-Cost Deployment**: QueryPilot runs entirely on free-tier infrastructure (Vercel, Render, Neon) with robust quota guards preventing unexpected downtime or fees.
+- **Security & Integrity**: Non-root execution, role-level read-only guarantees, and startup verification eliminate configuration drift and privilege escalation risks.
+- **Confidence**: GitHub Actions CI ensures every pull request passes linting, type safety, security audits, database migrations, and regression tests.
+
 
 
 

@@ -25,6 +25,7 @@ export const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ sql }) => {
   const [error, setError] = useState<string | null>(null);
   const [copiedDdl, setCopiedDdl] = useState<string | null>(null);
 
+  const isBenchmarkDisabled = import.meta.env.VITE_BENCHMARK_ENABLED === "false";
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const handleAnalyze = async () => {
@@ -115,7 +116,16 @@ export const OptimizerPanel: React.FC<OptimizerPanelProps> = ({ sql }) => {
             )}
           </button>
 
-          {!isBenchmarking ? (
+          {isBenchmarkDisabled ? (
+            <button
+              disabled
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-500 cursor-not-allowed text-xs font-semibold rounded-md shadow border border-slate-700/50"
+              title="Query benchmarking is disabled on the public demo instance to conserve cloud resources. Plan analysis and index suggestions are fully available."
+            >
+              <Gauge className="w-3.5 h-3.5" />
+              <span>Benchmark (Disabled on Demo)</span>
+            </button>
+          ) : !isBenchmarking ? (
             <button
               onClick={() => setShowConfirmModal(true)}
               disabled={isLoading || !sql.trim()}

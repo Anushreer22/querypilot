@@ -28,6 +28,10 @@ FULL_USERS = 50_000
 FULL_PRODUCTS = 5_000
 FULL_ORDERS = 500_000
 
+MEDIUM_USERS = 10_000
+MEDIUM_PRODUCTS = 1_000
+MEDIUM_ORDERS = 100_000
+
 SMALL_USERS = 1_000
 SMALL_PRODUCTS = 200
 SMALL_ORDERS = 5_000
@@ -91,16 +95,32 @@ def get_default_database_url() -> str:
     return settings.shop_admin_database_url
 
 
-def seed_sample_shop(database_url: str, seed: int = 42, small: bool = False, reset: bool = True) -> None:
+def seed_sample_shop(
+    database_url: str,
+    seed: int = 42,
+    small: bool = False,
+    medium: bool = False,
+    reset: bool = True,
+) -> None:
     start_total_time = time.time()
     rng = np.random.default_rng(seed)
 
-    num_users = SMALL_USERS if small else FULL_USERS
-    num_products = SMALL_PRODUCTS if small else FULL_PRODUCTS
-    num_orders = SMALL_ORDERS if small else FULL_ORDERS
+    if small:
+        num_users = SMALL_USERS
+        num_products = SMALL_PRODUCTS
+        num_orders = SMALL_ORDERS
+    elif medium:
+        num_users = MEDIUM_USERS
+        num_products = MEDIUM_PRODUCTS
+        num_orders = MEDIUM_ORDERS
+    else:
+        num_users = FULL_USERS
+        num_products = FULL_PRODUCTS
+        num_orders = FULL_ORDERS
 
     print("=== Starting sample_shop Seed ===")
-    print(f"Mode: {'SMALL (--small)' if small else 'FULL'}")
+    mode_str = "SMALL (--small)" if small else ("MEDIUM (--medium)" if medium else "FULL")
+    print(f"Mode: {mode_str}")
     print(f"Random seed: {seed}")
     print(f"Target: {num_users:,} users, {num_products:,} products, ~{num_orders:,} orders")
 
@@ -334,14 +354,19 @@ def seed_sample_shop(database_url: str, seed: int = 42, small: bool = False, res
         cur.execute("SELECT count(*) FROM order_items;")
         final_items = cur.fetchone()[0]
 
+        cur.execute("SELECT pg_size_pretty(pg_database_size(current_database()));")
+        db_size_res = cur.fetchone()
+        db_size = db_size_res[0] if db_size_res else "unknown"
+
         total_elapsed = time.time() - start_total_time
         print("\n=== Seeding Summary ===")
-        print(f"Database:     {active_db}")
-        print(f"Users:        {final_users:,}")
-        print(f"Products:     {final_products:,}")
-        print(f"Orders:       {final_orders:,}")
-        print(f"Order Items:  {final_items:,}")
-        print(f"Total time:   {total_elapsed:.2f} seconds")
+        print(f"Database:      {active_db}")
+        print(f"Database Size: {db_size}")
+        print(f"Users:         {final_users:,}")
+        print(f"Products:      {final_products:,}")
+        print(f"Orders:        {final_orders:,}")
+        print(f"Order Items:   {final_items:,}")
+        print(f"Total time:    {total_elapsed:.2f} seconds")
         print("========================\n")
 
     finally:
@@ -351,6 +376,7 @@ def seed_sample_shop(database_url: str, seed: int = 42, small: bool = False, res
 def main():
     parser = argparse.ArgumentParser(description="Seed sample_shop database with realistic e-commerce data.")
     parser.add_argument("--small", action="store_true", help="Generate smaller dataset (1k users, 5k orders) for quick testing")
+    parser.add_argument("--medium", action="store_true", help="Generate medium dataset (10k users, 1k products, 100k orders) for free-tier Neon")
     parser.add_argument("--seed", type=int, default=42, help="Random generator seed for determinism (default: 42)")
     parser.add_argument("--reset", action="store_true", default=True, help="Truncate tables before seeding (default: True)")
     parser.add_argument("--database-url", type=str, default=None, help="Database connection URL (defaults to SHOP_ADMIN_DATABASE_URL)")
@@ -368,6 +394,7 @@ def main():
         database_url=db_url,
         seed=args.seed,
         small=args.small,
+        medium=args.medium,
         reset=args.reset,
     )
 

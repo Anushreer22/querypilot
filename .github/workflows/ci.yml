@@ -1,0 +1,297 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend CI (Python 3.12 & Postgres 16)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: querypilot_postgres_pass
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Initialize PostgreSQL databases and roles
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: querypilot_postgres_pass
+          APP_RW_PASSWORD: querypilot_app_rw_pass
+          READONLY_PASSWORD: querypilot_readonly_pass
+        run: |
+          # Create databases and roles
+          psql -v ON_ERROR_STOP=1 --dbname postgres <<-EOSQL
+            SELECT 'CREATE DATABASE querypilot_app' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'querypilot_app')\gexec
+            SELECT 'CREATE DATABASE sample_shop' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'sample_shop')\gexec
+            SELECT 'CREATE DATABASE sample_shop_bench' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'sample_shop_bench')\gexec
+            DO \$\$
+            BEGIN
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_rw') THEN
+                CREATE ROLE app_rw WITH LOGIN PASSWORD '${APP_RW_PASSWORD}';
+              END IF;
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'readonly_user') THEN
+                CREATE ROLE readonly_user WITH LOGIN PASSWORD '${READONLY_PASSWORD}';
+              END IF;
+            END
+            \$\$;
+            REVOKE CONNECT ON DATABASE querypilot_app FROM PUBLIC;
+            GRANT ALL PRIVILEGES ON DATABASE querypilot_app TO app_rw;
+            GRANT CONNECT ON DATABASE sample_shop TO readonly_user;
+            GRANT CONNECT ON DATABASE sample_shop_bench TO readonly_user;
+          EOSQL
+
+          # Permissions within querypilot_app
+          psql -v ON_ERROR_STOP=1 --dbname querypilot_app <<-EOSQL
+            GRANT ALL ON SCHEMA public TO app_rw;
+            GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO app_rw;
+            GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO app_rw;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO app_rw;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO app_rw;
+          EOSQL
+
+          # Ensure readonly_user on sample_shop has strict read-only parameters
+          psql -v ON_ERROR_STOP=1 --dbname sample_shop <<-EOSQL
+            REVOKE CREATE ON SCHEMA public FROM readonly_user;
+            REVOKE ALL ON ALL TABLES IN SCHEMA public FROM readonly_user;
+            ALTER ROLE readonly_user SET default_transaction_read_only = on;
+            ALTER ROLE readonly_user SET statement_timeout = '5s';
+          EOSQL
+
+          # Same permissions on sample_shop_bench
+          psql -v ON_ERROR_STOP=1 --dbname sample_shop_bench <<-EOSQL
+            REVOKE CREATE ON SCHEMA public FROM readonly_user;
+            REVOKE ALL ON ALL TABLES IN SCHEMA public FROM readonly_user;
+            ALTER ROLE readonly_user SET default_transaction_read_only = on;
+            ALTER ROLE readonly_user SET statement_timeout = '5s';
+          EOSQL
+
+      - name: Run database migrations
+        env:
+          APP_DATABASE_URL: postgresql+psycopg://app_rw:querypilot_app_rw_pass@localhost:5432/querypilot_app
+          SHOP_ADMIN_DATABASE_URL: postgresql+psycopg://postgres:querypilot_postgres_pass@localhost:5432/sample_shop
+        run: |
+          alembic -c alembic.ini upgrade head
+          alembic -c alembic_shop.ini upgrade head
+
+      - name: Seed sample_shop (--small dataset)
+        env:
+          SHOP_ADMIN_DATABASE_URL: postgresql+psycopg://postgres:querypilot_postgres_pass@localhost:5432/sample_shop
+        run: |
+          python scripts/seed_shop.py --small
+
+      - name: Run Ruff linter and formatter checks
+        run: |
+          ruff check app tests
+          ruff format --check app tests
+
+      - name: Run Mypy static type analysis
+        run: |
+          mypy app
+
+      - name: Run Pytest test suite with coverage
+        env:
+          APP_DATABASE_URL: postgresql+psycopg://app_rw:querypilot_app_rw_pass@localhost:5432/querypilot_app
+          SHOP_DATABASE_URL: postgresql+psycopg://readonly_user:querypilot_readonly_pass@localhost:5432/sample_shop
+          SHOP_ADMIN_DATABASE_URL: postgresql+psycopg://postgres:querypilot_postgres_pass@localhost:5432/sample_shop
+          BENCH_DATABASE_URL: postgresql+psycopg://readonly_user:querypilot_readonly_pass@localhost:5432/sample_shop_bench
+          BENCH_ADMIN_DATABASE_URL: postgresql+psycopg://postgres:querypilot_postgres_pass@localhost:5432/sample_shop_bench
+        run: |
+          pytest tests --cov=app --cov-report=xml --cov-report=term-missing
+
+      - name: Run pip-audit dependency vulnerability scan
+        run: |
+          pip-audit
+
+      - name: Upload backend coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-report
+          path: backend/coverage.xml
+          retention-days: 14
+
+  frontend:
+    name: Frontend CI (Node 20 & Vite)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Run Vitest unit & integration tests
+        run: npm run test
+
+      - name: Build frontend production bundle
+        run: npm run build
+
+      - name: Run npm audit check
+        run: npm audit --audit-level=moderate || true
+
+  eval-offline:
+    name: Evaluation Harness (Offline FakeLLM)
+    needs: backend
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: querypilot_postgres_pass
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Initialize PostgreSQL databases and roles
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: querypilot_postgres_pass
+          APP_RW_PASSWORD: querypilot_app_rw_pass
+          READONLY_PASSWORD: querypilot_readonly_pass
+        run: |
+          psql -v ON_ERROR_STOP=1 --dbname postgres <<-EOSQL
+            SELECT 'CREATE DATABASE querypilot_app' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'querypilot_app')\gexec
+            SELECT 'CREATE DATABASE sample_shop' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'sample_shop')\gexec
+            SELECT 'CREATE DATABASE sample_shop_bench' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'sample_shop_bench')\gexec
+            DO \$\$
+            BEGIN
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_rw') THEN
+                CREATE ROLE app_rw WITH LOGIN PASSWORD '${APP_RW_PASSWORD}';
+              END IF;
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'readonly_user') THEN
+                CREATE ROLE readonly_user WITH LOGIN PASSWORD '${READONLY_PASSWORD}';
+              END IF;
+            END
+            \$\$;
+            REVOKE CONNECT ON DATABASE querypilot_app FROM PUBLIC;
+            GRANT ALL PRIVILEGES ON DATABASE querypilot_app TO app_rw;
+            GRANT CONNECT ON DATABASE sample_shop TO readonly_user;
+            GRANT CONNECT ON DATABASE sample_shop_bench TO readonly_user;
+          EOSQL
+
+          psql -v ON_ERROR_STOP=1 --dbname querypilot_app <<-EOSQL
+            GRANT ALL ON SCHEMA public TO app_rw;
+            GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO app_rw;
+            GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO app_rw;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO app_rw;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO app_rw;
+          EOSQL
+
+          psql -v ON_ERROR_STOP=1 --dbname sample_shop <<-EOSQL
+            REVOKE CREATE ON SCHEMA public FROM readonly_user;
+            REVOKE ALL ON ALL TABLES IN SCHEMA public FROM readonly_user;
+            ALTER ROLE readonly_user SET default_transaction_read_only = on;
+            ALTER ROLE readonly_user SET statement_timeout = '5s';
+          EOSQL
+
+      - name: Run migrations & seed sample_shop
+        env:
+          APP_DATABASE_URL: postgresql+psycopg://app_rw:querypilot_app_rw_pass@localhost:5432/querypilot_app
+          SHOP_ADMIN_DATABASE_URL: postgresql+psycopg://postgres:querypilot_postgres_pass@localhost:5432/sample_shop
+        run: |
+          alembic -c alembic.ini upgrade head
+          alembic -c alembic_shop.ini upgrade head
+          python scripts/seed_shop.py --small
+
+      - name: Execute 30-Question Evaluation Benchmark
+        env:
+          APP_DATABASE_URL: postgresql+psycopg://app_rw:querypilot_app_rw_pass@localhost:5432/querypilot_app
+          SHOP_DATABASE_URL: postgresql+psycopg://readonly_user:querypilot_readonly_pass@localhost:5432/sample_shop
+        run: |
+          python scripts/run_eval.py
+
+      - name: Upload Evaluation Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-benchmark-results
+          path: |
+            docs/EVAL_RESULTS.md
+            backend/tests/eval/eval_results.json
+          retention-days: 30
+

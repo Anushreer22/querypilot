@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
 from app.api.agent import router as agent_router
 from app.api.ask import router as ask_router
@@ -21,13 +22,70 @@ from app.core.middleware import (
 )
 from app.db.session import app_engine, bench_admin_engine, bench_engine, shop_engine
 
+logger = logging.getLogger(__name__)
+
 # Initialize structured JSON logging
 setup_structured_logging()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan context managing database engine cleanup."""
+    """Application lifespan context managing startup validation and database engine cleanup."""
+    # Production startup validation
+    if settings.environment == "production":
+        logger.info("Executing strict production startup validations...")
+
+        # 1. CORS validation: no wildcard, non-empty
+        origins = settings.cors_origins
+        if not origins:
+            raise RuntimeError("Production configuration error: CORS origins list is empty.")
+        if "*" in origins:
+            raise RuntimeError(
+                "Production security violation: CORS wildcard '*' is not permitted in production."
+            )
+
+        # 2. Required LLM secret validation
+        if settings.llm_provider == "openai" and not settings.openai_api_key:
+            raise RuntimeError(
+                "Production configuration error: OPENAI_API_KEY is required when LLM_PROVIDER is 'openai'."
+            )
+        elif settings.llm_provider == "gemini" and not settings.gemini_api_key:
+            raise RuntimeError(
+                "Production configuration error: GEMINI_API_KEY is required when LLM_PROVIDER is 'gemini'."
+            )
+
+        # 3. Readonly database role safety validation
+        try:
+            async with shop_engine.connect() as conn:
+                res = await conn.execute(text("SHOW default_transaction_read_only;"))
+                ro_val = res.scalar_one_or_none()
+                if ro_val != "on":
+                    raise RuntimeError(
+                        f"Production security violation: sample_shop role does not enforce default_transaction_read_only=on (got '{ro_val}')."
+                    )
+
+                # Attempt an INSERT that must fail
+                try:
+                    await conn.execute(
+                        text("INSERT INTO users (email, name) VALUES ('test@example.com', 'Test');")
+                    )
+                    raise RuntimeError(
+                        "Production security violation: sample_shop role permitted an INSERT operation!"
+                    )
+                except RuntimeError:
+                    raise
+                except Exception:  # noqa: BLE001
+                    # Expected to fail due to read-only transaction or permissions
+                    logger.info("Verified sample_shop read-only enforcement: write rejected as expected.")
+        except RuntimeError:
+            raise
+        except Exception as exc:
+            raise RuntimeError(
+                f"Production startup verification failed on sample_shop: {exc}"
+            ) from exc
+
+        logger.info("Production startup validations passed successfully.")
+
     yield
     # Clean up database engine connection pools on shutdown
     await app_engine.dispose()

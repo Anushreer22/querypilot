@@ -17,6 +17,7 @@ from app.schemas.agent import (
     AgentRunSummary,
 )
 from app.services.ask_service import InMemoryRateLimiter
+from app.services.daily_cap import check_daily_llm_cap
 
 router = APIRouter(prefix="/api/agent", tags=["Agent"])
 
@@ -37,7 +38,7 @@ async def check_agent_rate_limit(request: Request) -> None:
     "/ask",
     response_model=AgentAskResponse,
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(check_agent_rate_limit)],
+    dependencies=[Depends(check_agent_rate_limit), Depends(check_daily_llm_cap)],
 )
 async def ask_agent(
     payload: AgentAskRequest,

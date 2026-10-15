@@ -1,0 +1,36 @@
+# Environment and local virtual environments
+.env*
+.venv/
+venv/
+env/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Testing and coverage artifacts
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+tests/
+
+# Scratch and temporary logs
+scratch/
+scratch*
+*.log
+
+# Git and OS metadata
+.git/
+.gitignore
+.DS_Store
+Thumbs.db
+
+# Frontend / node artifacts
+node_modules/
+

@@ -28,7 +28,13 @@ async def check_engine_connection(engine: AsyncEngine) -> Literal["ok", "error"]
 
 @router.get("/health")
 async def health():
-    """Health check endpoint checking both querypilot_app and sample_shop databases."""
+    """Liveness probe: verifies the application server is running."""
+    return {"status": "ok"}
+
+
+@router.get("/ready")
+async def ready():
+    """Readiness probe: checks both querypilot_app and sample_shop database connectivity."""
     app_db_status = await check_engine_connection(app_engine)
     shop_db_status = await check_engine_connection(shop_engine)
 

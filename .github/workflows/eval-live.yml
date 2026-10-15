@@ -1,0 +1,135 @@
+name: Evaluation (Live LLM)
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: "LLM Provider (openai or gemini)"
+        required: true
+        default: "openai"
+        type: choice
+        options:
+          - openai
+          - gemini
+      model:
+        description: "Model Name"
+        required: true
+        default: "gpt-4o-mini"
+        type: string
+      max_calls:
+        description: "Max Allowed API Calls (Cost Guard)"
+        required: true
+        default: "70"
+        type: string
+
+jobs:
+  eval-live:
+    name: Live Model Evaluation Suite
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: querypilot_postgres_pass
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Initialize PostgreSQL databases and roles
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: querypilot_postgres_pass
+          APP_RW_PASSWORD: querypilot_app_rw_pass
+          READONLY_PASSWORD: querypilot_readonly_pass
+        run: |
+          psql -v ON_ERROR_STOP=1 --dbname postgres <<-EOSQL
+            SELECT 'CREATE DATABASE querypilot_app' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'querypilot_app')\gexec
+            SELECT 'CREATE DATABASE sample_shop' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'sample_shop')\gexec
+            DO \$\$
+            BEGIN
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_rw') THEN
+                CREATE ROLE app_rw WITH LOGIN PASSWORD '${APP_RW_PASSWORD}';
+              END IF;
+              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'readonly_user') THEN
+                CREATE ROLE readonly_user WITH LOGIN PASSWORD '${READONLY_PASSWORD}';
+              END IF;
+            END
+            \$\$;
+            REVOKE CONNECT ON DATABASE querypilot_app FROM PUBLIC;
+            GRANT ALL PRIVILEGES ON DATABASE querypilot_app TO app_rw;
+            GRANT CONNECT ON DATABASE sample_shop TO readonly_user;
+          EOSQL
+
+          psql -v ON_ERROR_STOP=1 --dbname querypilot_app <<-EOSQL
+            GRANT ALL ON SCHEMA public TO app_rw;
+            GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO app_rw;
+            GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO app_rw;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO app_rw;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO app_rw;
+          EOSQL
+
+          psql -v ON_ERROR_STOP=1 --dbname sample_shop <<-EOSQL
+            REVOKE CREATE ON SCHEMA public FROM readonly_user;
+            REVOKE ALL ON ALL TABLES IN SCHEMA public FROM readonly_user;
+            ALTER ROLE readonly_user SET default_transaction_read_only = on;
+            ALTER ROLE readonly_user SET statement_timeout = '5s';
+          EOSQL
+
+      - name: Run migrations & seed sample_shop
+        env:
+          APP_DATABASE_URL: postgresql+psycopg://app_rw:querypilot_app_rw_pass@localhost:5432/querypilot_app
+          SHOP_ADMIN_DATABASE_URL: postgresql+psycopg://postgres:querypilot_postgres_pass@localhost:5432/sample_shop
+        run: |
+          alembic -c alembic.ini upgrade head
+          alembic -c alembic_shop.ini upgrade head
+          python scripts/seed_shop.py --small
+
+      - name: Execute Live Evaluation Benchmark
+        env:
+          APP_DATABASE_URL: postgresql+psycopg://app_rw:querypilot_app_rw_pass@localhost:5432/querypilot_app
+          SHOP_DATABASE_URL: postgresql+psycopg://readonly_user:querypilot_readonly_pass@localhost:5432/sample_shop
+          LLM_PROVIDER: ${{ inputs.provider }}
+          LLM_MODEL: ${{ inputs.model }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python scripts/run_eval.py --real-llm --max-calls ${{ inputs.max_calls }}
+
+      - name: Upload Live Evaluation Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-eval-results-${{ inputs.model }}
+          path: |
+            docs/EVAL_RESULTS.md
+            backend/tests/eval/eval_results.json
+          retention-days: 30
+

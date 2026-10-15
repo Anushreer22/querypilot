@@ -102,8 +102,8 @@ async function request<T>(
     throw new ApiClientError(0, err instanceof Error ? err.message : "Network failure");
   }
 
-  // Handle degraded health check 503 as valid payload
-  if (endpoint === "/health" && response.status === 503) {
+  // Handle degraded health/ready check 503 as valid payload
+  if ((endpoint === "/ready" || endpoint === "/health") && response.status === 503) {
     return (await response.json()) as T;
   }
 
@@ -131,7 +131,7 @@ async function request<T>(
 
 export const api = {
   /** Check live status of backend and databases */
-  getHealth: (): Promise<HealthResponse> => request<HealthResponse>("/health"),
+  getHealth: (): Promise<HealthResponse> => request<HealthResponse>("/ready"),
 
   /** Inspect business table schema */
   getSchema: (): Promise<SchemaResponse> => request<SchemaResponse>("/api/schema"),

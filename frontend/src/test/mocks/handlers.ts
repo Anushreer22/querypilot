@@ -1,7 +1,14 @@
 import { http, HttpResponse } from "msw";
 
 export const handlers = [
-  // GET /health
+  // GET /ready & /health
+  http.get("*/ready", () => {
+    return HttpResponse.json({
+      status: "ok",
+      app_db: "ok",
+      shop_db: "ok",
+    });
+  }),
   http.get("*/health", () => {
     return HttpResponse.json({
       status: "ok",

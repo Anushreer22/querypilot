@@ -12,6 +12,7 @@ from app.schemas.ask import (
     AskResultPayload,
     ClarificationResponse,
 )
+from app.services.daily_cap import check_daily_llm_cap
 from app.services.llm.base import (
     LLMInvalidResponse,
     LLMRateLimit,
@@ -94,6 +95,9 @@ async def ask_question(question: str, client_ip: str = "127.0.0.1") -> AskRespon
             status_code=429,
             detail=f"Rate limit exceeded. Maximum {settings.rate_limit_ask_per_minute} requests per minute.",
         )
+
+    # 1b. Check daily LLM call cap
+    await check_daily_llm_cap()
 
     llm = get_llm_client()
 
