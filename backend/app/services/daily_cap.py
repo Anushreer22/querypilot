@@ -21,9 +21,7 @@ async def check_daily_llm_cap() -> None:
     if settings.daily_llm_call_cap <= 0:
         return
 
-    today_start = datetime.now(UTC).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
+    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
 
     try:
         async with AppAsyncSessionLocal() as session:

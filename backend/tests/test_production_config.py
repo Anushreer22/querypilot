@@ -82,7 +82,9 @@ async def test_startup_validation_verifies_read_only_setting():
 
     with patch("app.main.settings", test_settings), patch("app.main.shop_engine", mock_engine):
         dummy_app = FastAPI()
-        with pytest.raises(RuntimeError, match="sample_shop role does not enforce default_transaction_read_only=on"):
+        with pytest.raises(
+            RuntimeError, match="sample_shop role does not enforce default_transaction_read_only=on"
+        ):
             async with lifespan(dummy_app):
                 pass
 
@@ -105,7 +107,9 @@ async def test_optimize_benchmark_disabled_returns_403(async_client: httpx.Async
 
 
 @pytest.mark.asyncio
-async def test_optimize_plan_analysis_works_when_benchmark_disabled(async_client: httpx.AsyncClient):
+async def test_optimize_plan_analysis_works_when_benchmark_disabled(
+    async_client: httpx.AsyncClient,
+):
     """When benchmark_enabled is False, fast plan analysis (benchmark=False) still succeeds."""
     _optimize_rate_limiter._history.clear()
     with patch("app.api.optimize.settings.benchmark_enabled", False):

@@ -76,7 +76,9 @@ async def lifespan(app: FastAPI):
                     raise
                 except Exception:  # noqa: BLE001
                     # Expected to fail due to read-only transaction or permissions
-                    logger.info("Verified sample_shop read-only enforcement: write rejected as expected.")
+                    logger.info(
+                        "Verified sample_shop read-only enforcement: write rejected as expected."
+                    )
         except RuntimeError:
             raise
         except Exception as exc:

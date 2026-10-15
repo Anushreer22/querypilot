@@ -1,6 +1,6 @@
 # QueryPilot
 
-[![CI Pipeline](https://github.com/anushreer/querypilot/actions/workflows/ci.yml/badge.svg)](https://github.com/anushreer/querypilot/actions/workflows/ci.yml)
+[![CI Pipeline](https://github.com/Anushreer22/querypilot/actions/workflows/ci.yml/badge.svg)](https://github.com/Anushreer22/querypilot/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![React 18](https://img.shields.io/badge/React-18-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
@@ -98,7 +98,7 @@ The following table demonstrates real-world query optimizations detected by the 
 
 ### 2. Clone and Configure
 ```bash
-git clone https://github.com/anushreer/querypilot.git
+git clone https://github.com/Anushreer22/querypilot.git
 cd querypilot
 
 # Copy environment configurations
