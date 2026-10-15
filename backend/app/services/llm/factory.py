@@ -24,4 +24,3 @@ def get_llm_client() -> LLMClient:
         return FakeLLM()
 
     return OpenAILLMClient()
-

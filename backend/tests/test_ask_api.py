@@ -55,7 +55,9 @@ class TestAskApi:
         assert data["results"]["columns"] == ["id", "name", "email"]
         assert len(data["results"]["rows"]) == 5
 
-    async def test_ask_ambiguous_question_returns_clarification_no_sql(self, async_client: httpx.AsyncClient):
+    async def test_ask_ambiguous_question_returns_clarification_no_sql(
+        self, async_client: httpx.AsyncClient
+    ):
         fake = FakeLLM(
             responses=[
                 {
@@ -80,7 +82,9 @@ class TestAskApi:
         assert data["clarification"] is not None
         assert "Do you want total revenue" in data["clarification"]["clarification_question"]
 
-    async def test_ask_invalid_json_recovers_with_one_shot_retry(self, async_client: httpx.AsyncClient):
+    async def test_ask_invalid_json_recovers_with_one_shot_retry(
+        self, async_client: httpx.AsyncClient
+    ):
         # 1st attempt: malformed schema (missing 'sql' key)
         # 2nd attempt: valid response
         fake = FakeLLM(
@@ -105,7 +109,9 @@ class TestAskApi:
         assert data["results"]["row_count"] == 1
         assert len(fake.calls) == 2
 
-    async def test_ask_validator_rejection_triggers_successful_repair(self, async_client: httpx.AsyncClient):
+    async def test_ask_validator_rejection_triggers_successful_repair(
+        self, async_client: httpx.AsyncClient
+    ):
         # 1st attempt: Validator will reject DROP TABLE
         # 2nd attempt (repair): Model corrects to valid SELECT count
         fake = FakeLLM(
@@ -166,7 +172,10 @@ class TestAskApi:
         assert response.status_code == 422
         data = response.json()
         assert "detail" in data
-        assert "validation failed" in data["detail"].lower() or "not permitted" in data["detail"].lower()
+        assert (
+            "validation failed" in data["detail"].lower()
+            or "not permitted" in data["detail"].lower()
+        )
 
     async def test_ask_prompt_injection_is_blocked(self, async_client: httpx.AsyncClient):
         # Even if user attempts prompt injection and model generates a DROP,
@@ -219,6 +228,7 @@ class TestAskApi:
 
         async with shop_engine.connect() as conn:
             from sqlalchemy import text
+
             initial_count = (await conn.execute(text("SELECT count(*) FROM users"))).scalar()
 
         payload = {"question": "Add a new user named Hacker"}
@@ -227,6 +237,7 @@ class TestAskApi:
 
         async with shop_engine.connect() as conn:
             from sqlalchemy import text
+
             final_count = (await conn.execute(text("SELECT count(*) FROM users"))).scalar()
 
         assert initial_count == final_count

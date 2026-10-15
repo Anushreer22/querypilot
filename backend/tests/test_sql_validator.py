@@ -1,6 +1,5 @@
 """Unit tests for strict AST-based SQL Validator."""
 
-
 from app.services.sql_validator import validate_sql
 
 
@@ -296,3 +295,61 @@ class TestSqlValidatorRejectedQueries:
         for cmd in admin_cmds:
             res = validate_sql(cmd)
             assert res.ok is False, f"Expected {cmd} to be rejected"
+
+    def test_syntax_parse_error(self):
+        res = validate_sql("SELECT FROM WHERE ;;;")
+        assert res.ok is False
+        assert "syntax error" in res.reason.lower() or "failed to parse" in res.reason.lower()
+
+    def test_cte_schema_qualification_rejected(self):
+        query = "WITH my_cte AS (SELECT id FROM users) SELECT * FROM public.my_cte;"
+        res = validate_sql(query)
+        assert res.ok is False
+        assert "cannot specify a schema qualification" in res.reason.lower()
+
+    def test_catalog_qualified_table_rejected(self):
+        query = "SELECT * FROM my_database.public.users;"
+        res = validate_sql(query)
+        assert res.ok is False
+        assert "catalog" in res.reason.lower()
+
+    def test_subquery_non_literal_limit_rejected(self):
+        query = "SELECT * FROM (SELECT id FROM users LIMIT (SELECT 5)) sub;"
+        res = validate_sql(query)
+        assert res.ok is False
+        assert "non-literal limit" in res.reason.lower()
+
+    def test_fetch_clause_variations(self):
+        # 1. FETCH FIRST ROW ONLY
+        res1 = validate_sql("SELECT * FROM users FETCH FIRST ROW ONLY;")
+        assert res1.ok is True
+        assert res1.limit_injected is False
+
+        # 2. FETCH syntax error with negative
+        res2 = validate_sql("SELECT * FROM users FETCH FIRST -5 ROWS ONLY;")
+        assert res2.ok is False
+        assert "syntax" in res2.reason.lower() or "invalid" in res2.reason.lower()
+
+        # 3. FETCH exceeding max limit
+        res3 = validate_sql("SELECT * FROM users FETCH FIRST 5000 ROWS ONLY;")
+        assert res3.ok is True
+        assert res3.limit_injected is True
+        assert "1000" in res3.sanitized_sql
+
+    def test_anonymous_and_info_function_validation(self):
+        # Anonymous allowed function
+        res1 = validate_sql("SELECT date_part('year', created_at) FROM users;")
+        assert res1.ok is True
+
+        # Anonymous disallowed function
+        res2 = validate_sql("SELECT pg_backend_pid() FROM users;")
+        assert res2.ok is False
+        assert "not permitted" in res2.reason.lower()
+
+        # Information functions
+        res3 = validate_sql("SELECT current_user FROM users;")
+        assert res3.ok is False
+
+        # Logical connector AND/OR in function check
+        res4 = validate_sql("SELECT id FROM users WHERE id = 1 AND name = 'Alice' OR id = 2;")
+        assert res4.ok is True

@@ -377,17 +377,42 @@ Frontend tests include:
 - `OptimizerPanel.test.tsx`: Fast read-only plan analysis, detected bottleneck badges, index recommendation review, and confirmation dialog for benchmarks.
 - `HistoryPanel.test.tsx`: Audit ledger list rendering, status filtering tabs (*All*, *Success*, *Rejected*, *Error*, *Timeout*, *Clarification*), and click-to-load editor callback.
 
+#### Security Attack Suite & Evaluation Harness (Phase 8A)
+Run the dedicated security attack tests and evaluation harness:
+
+```bash
+cd backend
+
+# 1. Run 43 automated security attack tests (SQL injection, prompt injection, DDL smuggling, privilege escalation, rate limits)
+pytest tests/security -v
+
+# 2. Run the 30-question NL-to-SQL evaluation harness comparing /api/ask and /api/agent/ask
+python scripts/run_eval.py
+
+# 3. Run full backend test suite with coverage report
+pytest tests --cov=app --cov-report=term-missing
+
+# 4. Run linting, formatting, and static type checks
+ruff check app tests
+ruff format --check app tests
+mypy app
+
+# 5. Run dependency vulnerability audit
+pip-audit
+```
+
 ---
 
 ## Detailed Documentation & Query Profiles
 
+- **Evaluation & Benchmark Report**: 30-question evaluation metrics, execution accuracy, clarification precision, and refusal rates are published in [`docs/EVAL_RESULTS.md`](docs/EVAL_RESULTS.md).
 - **Query Optimization & Benchmark Architecture**: Plan finding detectors, safe DDL construction, copy database isolation, and $2\sigma$ noise math are detailed in [`docs/OPTIMIZATION.md`](docs/OPTIMIZATION.md).
 - **Optimization & Benchmark Report**: Empirical results and case studies comparing baseline vs. optimized queries across 500k orders are published in [`docs/OPTIMIZATION_REPORT.md`](docs/OPTIMIZATION_REPORT.md).
 - **Agent Architecture & Reasoning Loop**: Loop sequence diagrams, tool catalog, trust boundaries, and stop conditions are detailed in [`docs/AGENT.md`](docs/AGENT.md).
 - **Prompt Engineering & Repair Policy**: Prompt templates, XML delimiters, JSON schema contract, and single-repair strategy are documented in [`docs/PROMPTS.md`](docs/PROMPTS.md).
-- **Security Architecture & Threat Model**: Defense-in-depth layers, AST validation rules, function allowlists, and threat matrix are detailed in [`docs/SECURITY.md`](docs/SECURITY.md).
+- **Security Architecture & Threat Model**: Defense-in-depth layers, AST validation rules, function allowlists, redaction filters, and threat matrix are detailed in [`docs/SECURITY.md`](docs/SECURITY.md).
 - **Database Schema & Deliberate Index Omissions**: Full Mermaid ER diagrams, constraint rationale, deliberate index omissions, and 10 benchmark query profiles with real execution times can be found in [`docs/DATABASE.md`](docs/DATABASE.md).
-- **Architecture Decision Records**: Architectural rationale on database isolation (ADR 001), secure query execution architecture (ADR 002), LLM prompt-and-repair architecture (ADR 003), autonomous tool-calling agent architecture (ADR 004), query optimization / benchmark runner architecture (ADR 005), and frontend dashboard / virtualized table architecture (ADR 006) can be found in [`DECISIONS.md`](DECISIONS.md).
+- **Architecture Decision Records**: Architectural rationale on database isolation (ADR 001), secure query execution architecture (ADR 002), LLM prompt-and-repair architecture (ADR 003), autonomous tool-calling agent architecture (ADR 004), query optimization / benchmark runner architecture (ADR 005), frontend dashboard / virtualized table architecture (ADR 006), and testing / evaluation harness / security hardening architecture (ADR 007) can be found in [`DECISIONS.md`](DECISIONS.md).
 
 
 

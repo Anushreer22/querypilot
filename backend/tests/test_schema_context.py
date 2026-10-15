@@ -56,7 +56,9 @@ class TestSchemaContext:
         invalidate_schema_context_cache()
 
         # Next call must hit database and re-format
-        with patch("app.services.schema_context.format_schema_description", wraps=format_schema_description) as mock_format:
+        with patch(
+            "app.services.schema_context.format_schema_description", wraps=format_schema_description
+        ) as mock_format:
             await get_schema_context()
             mock_format.assert_called_once()
 

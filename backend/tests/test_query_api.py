@@ -168,4 +168,3 @@ class TestQueryHistoryApi:
             ids_page1 = {item["id"] for item in data1["items"]}
             ids_page2 = {item["id"] for item in data2["items"]}
             assert ids_page1.isdisjoint(ids_page2)
-

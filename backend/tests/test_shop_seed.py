@@ -45,4 +45,6 @@ def test_seed_small_execution_and_integrity():
             WHERE ABS(o.total_amount - COALESCE(i.items_sum, 0)) > 0.001;
         """)
         mismatches = cur.fetchone()[0]
-        assert mismatches == 0, f"Expected 0 mismatches between order total_amount and items sum, got {mismatches}"
+        assert mismatches == 0, (
+            f"Expected 0 mismatches between order total_amount and items sum, got {mismatches}"
+        )

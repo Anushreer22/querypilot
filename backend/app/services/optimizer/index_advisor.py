@@ -39,17 +39,16 @@ async def get_existing_indexes() -> set[str]:
                 # Extract columns inside parenthesis: e.g. (created_at) or (order_id, product_id)
                 match = re.search(r"\((.+?)\)", indexdef)
                 if match:
-                    cols = tuple(
-                        c.strip().strip('"').lower()
-                        for c in match.group(1).split(",")
-                    )
+                    cols = tuple(c.strip().strip('"').lower() for c in match.group(1).split(","))
                     signatures.add(f"{table.lower()}:{','.join(cols)}")
     except Exception as exc:  # noqa: BLE001
         logger.warning("Failed to fetch existing database indexes: %s", exc)
     return signatures
 
 
-def generate_safe_ddl(table: str, columns: list[str], predicate: str | None = None) -> tuple[str, str]:
+def generate_safe_ddl(
+    table: str, columns: list[str], predicate: str | None = None
+) -> tuple[str, str]:
     """Construct safe CREATE INDEX SQL statement using strictly validated identifiers."""
     table_clean = table.lower().strip()
     if table_clean not in DEFAULT_ALLOWED_TABLES:
@@ -146,7 +145,9 @@ def advise_indexes(
                 sig = "orders:created_at:partial_delivered"
                 if sig not in seen_signatures:
                     seen_signatures.add(sig)
-                    idx_name, ddl = generate_safe_ddl("orders", ["created_at"], predicate="status = 'delivered'")
+                    idx_name, ddl = generate_safe_ddl(
+                        "orders", ["created_at"], predicate="status = 'delivered'"
+                    )
                     suggestions.append(
                         IndexSuggestion(
                             id=idx_name,

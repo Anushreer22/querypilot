@@ -18,6 +18,7 @@ async def get_schema() -> SchemaResponse:
     for all allowed business tables in a clean format suitable for AI agent consumption.
     """
     async with shop_engine.connect() as conn:
+
         def _inspect_tables(sync_conn) -> list[TableInfo]:
             inspector = inspect(sync_conn)
             table_names = inspector.get_table_names(schema="public")
@@ -65,4 +66,3 @@ async def get_schema() -> SchemaResponse:
 
         tables = await conn.run_sync(_inspect_tables)
         return SchemaResponse(tables=tables)
-

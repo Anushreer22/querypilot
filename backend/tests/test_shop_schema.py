@@ -30,13 +30,18 @@ def test_unique_email_constraint():
             row = cur.fetchone()
             if not row:
                 # Insert a base user to test
-                cur.execute("INSERT INTO users (name, email, country) VALUES ('Test User', 'dup@example.com', 'US') RETURNING email;")
+                cur.execute(
+                    "INSERT INTO users (name, email, country) VALUES ('Test User', 'dup@example.com', 'US') RETURNING email;"
+                )
                 email = cur.fetchone()[0]
             else:
                 email = row[1]
 
             with pytest.raises(errors.UniqueViolation):
-                cur.execute("INSERT INTO users (name, email, country) VALUES ('Dup User', %s, 'UK');", (email,))
+                cur.execute(
+                    "INSERT INTO users (name, email, country) VALUES ('Dup User', %s, 'UK');",
+                    (email,),
+                )
         conn.rollback()
 
 
@@ -44,7 +49,9 @@ def test_negative_product_price_rejected():
     """Verify CHECK (price >= 0) constraint rejects negative prices."""
     with get_admin_conn() as conn:
         with conn.cursor() as cur, pytest.raises(errors.CheckViolation):
-            cur.execute("INSERT INTO products (name, category, price, stock) VALUES ('Bad Item', 'Test', -10.00, 5);")
+            cur.execute(
+                "INSERT INTO products (name, category, price, stock) VALUES ('Bad Item', 'Test', -10.00, 5);"
+            )
         conn.rollback()
 
 
@@ -52,7 +59,9 @@ def test_negative_product_stock_rejected():
     """Verify CHECK (stock >= 0) constraint rejects negative stock."""
     with get_admin_conn() as conn:
         with conn.cursor() as cur, pytest.raises(errors.CheckViolation):
-            cur.execute("INSERT INTO products (name, category, price, stock) VALUES ('Bad Item', 'Test', 10.00, -1);")
+            cur.execute(
+                "INSERT INTO products (name, category, price, stock) VALUES ('Bad Item', 'Test', 10.00, -1);"
+            )
         conn.rollback()
 
 
@@ -68,7 +77,7 @@ def test_invalid_order_status_rejected():
             with pytest.raises(errors.CheckViolation):
                 cur.execute(
                     "INSERT INTO orders (user_id, status, total_amount, created_at) VALUES (%s, 'invalid_status', 50.00, NOW());",
-                    (user_id,)
+                    (user_id,),
                 )
         conn.rollback()
 

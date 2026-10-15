@@ -18,9 +18,11 @@ async def test_health_live_dbs_up(async_client: httpx.AsyncClient):
 @pytest.mark.asyncio
 async def test_health_mocked_db_failure(async_client: httpx.AsyncClient):
     """Test /health when one database connection fails (returns 503 Service Unavailable)."""
+
     async def mock_check(engine):
         # Simulate app_engine failure while shop_engine is ok
         from app.db.session import app_engine
+
         if engine is app_engine:
             return "error"
         return "ok"

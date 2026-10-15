@@ -31,7 +31,13 @@ def _compute_stats(timings: list[float]) -> BenchmarkIterationStats:
     """Compute standard statistical indicators (median, p95, min, max, stddev)."""
     if not timings:
         return BenchmarkIterationStats(
-            iterations=0, timings_ms=[], median_ms=0.0, p95_ms=0.0, min_ms=0.0, max_ms=0.0, stddev_ms=0.0
+            iterations=0,
+            timings_ms=[],
+            median_ms=0.0,
+            p95_ms=0.0,
+            min_ms=0.0,
+            max_ms=0.0,
+            stddev_ms=0.0,
         )
 
     sorted_t = sorted(timings)
@@ -108,7 +114,9 @@ async def run_benchmark(
 ) -> BenchmarkResult:
     """Execute the complete benchmarking protocol on sample_shop_bench with candidate index."""
     if _benchmark_lock.locked():
-        raise BenchmarkConcurrencyError("A query benchmark is already running on sample_shop_bench.")
+        raise BenchmarkConcurrencyError(
+            "A query benchmark is already running on sample_shop_bench."
+        )
 
     async with _benchmark_lock:
         logger.info("Acquired benchmark concurrency lock for %s", suggestion.id)
@@ -150,7 +158,7 @@ async def run_benchmark(
 
                 # Measure index disk footprint
                 size_res = await admin_conn.execute(
-                    text(f'SELECT pg_relation_size(\'"{candidate_name}"\');')
+                    text(f"SELECT pg_relation_size('\"{candidate_name}\"');")
                 )
                 bytes_used = size_res.scalar() or 0
                 index_size_mb = round(bytes_used / (1024.0 * 1024.0), 3)
@@ -189,20 +197,22 @@ async def run_benchmark(
             # 8. Invariant: ALWAYS drop the candidate index to leave bench DB clean
             try:
                 async with bench_admin_engine.connect() as admin_conn:
-                    logger.info("Tearing down candidate index '%s' on sample_shop_bench", candidate_name)
+                    logger.info(
+                        "Tearing down candidate index '%s' on sample_shop_bench", candidate_name
+                    )
                     await admin_conn.execute(text(f'DROP INDEX IF EXISTS "{candidate_name}";'))
                     await admin_conn.commit()
             except Exception as drop_err:  # noqa: BLE001
                 logger.error("Failed to drop candidate index '%s': %s", candidate_name, drop_err)
 
         # 9. Statistical Decision Rule (Measured vs Estimated)
-        speedup_factor = round(
-            baseline_stats.median_ms / max(optimized_stats.median_ms, 0.01), 2
-        )
+        speedup_factor = round(baseline_stats.median_ms / max(optimized_stats.median_ms, 0.01), 2)
         time_saved = baseline_stats.median_ms - optimized_stats.median_ms
 
         # Exceeds 2x standard deviation of baseline noise
-        is_statistically_significant = time_saved > (2.0 * baseline_stats.stddev_ms) and speedup_factor > 1.05
+        is_statistically_significant = (
+            time_saved > (2.0 * baseline_stats.stddev_ms) and speedup_factor > 1.05
+        )
 
         if index_used and results_match and is_statistically_significant:
             improvement_label = "MEASURED"
@@ -240,4 +250,3 @@ async def run_benchmark(
             improvement_label=improvement_label,
             conclusion=conclusion,
         )
-

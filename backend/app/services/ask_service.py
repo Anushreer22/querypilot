@@ -146,7 +146,9 @@ async def ask_question(question: str, client_ip: str = "127.0.0.1") -> AskRespon
             llm_provider=settings.llm_provider,
             llm_model=settings.llm_model,
         )
-        raise HTTPException(status_code=502, detail=f"LLM generation failed: {exc.message}") from exc
+        raise HTTPException(
+            status_code=502, detail=f"LLM generation failed: {exc.message}"
+        ) from exc
 
     # 4. Handle Clarification Flow (No SQL executed)
     if gen_response.needs_clarification:
@@ -181,7 +183,7 @@ async def ask_question(question: str, client_ip: str = "127.0.0.1") -> AskRespon
     validation = validate_sql(initial_sql)
     fixable_error: str | None = None
 
-    if not validation.ok:
+    if not validation.ok or validation.sanitized_sql is None:
         fixable_error = validation.reason or "Validation rejected query"
     else:
         # Initial execution attempt
@@ -248,11 +250,17 @@ async def ask_question(question: str, client_ip: str = "127.0.0.1") -> AskRespon
                     llm_model=settings.llm_model,
                     llm_latency_ms=llm_latency_ms,
                 )
-                raise HTTPException(status_code=422, detail=f"Permission error: {exc.message}") from exc
+                raise HTTPException(
+                    status_code=422, detail=f"Permission error: {exc.message}"
+                ) from exc
             fixable_error = exc.message
 
     # 6. Single Repair Attempt
-    logger.info("Triggering single repair attempt for question '%s' due to: %s", clean_question[:50], fixable_error)
+    logger.info(
+        "Triggering single repair attempt for question '%s' due to: %s",
+        clean_question[:50],
+        fixable_error,
+    )
     repair_user_prompt = build_repair_user_prompt(
         question=clean_question,
         previous_sql=initial_sql,
@@ -287,7 +295,7 @@ async def ask_question(question: str, client_ip: str = "127.0.0.1") -> AskRespon
     repaired_sql = repair_gen.sql
     repair_val = validate_sql(repaired_sql)
 
-    if not repair_val.ok:
+    if not repair_val.ok or repair_val.sanitized_sql is None:
         await log_query_history(
             sql_text=repaired_sql,
             status="rejected",

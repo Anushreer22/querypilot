@@ -104,9 +104,7 @@ async def _log_optimization_run(
                     else None
                 ),
                 speedup_factor=(
-                    Decimal(str(round(speedup_factor, 2)))
-                    if speedup_factor is not None
-                    else None
+                    Decimal(str(round(speedup_factor, 2))) if speedup_factor is not None else None
                 ),
                 improvement_label=improvement_label[:50],
                 duration_ms=Decimal(str(round(duration_ms, 2))),
@@ -124,7 +122,9 @@ async def _log_optimization_run(
     response_model=OptimizeResponse,
     summary="Analyze query plan, detect bottlenecks, recommend indexes, and optionally benchmark on safe copy",
     responses={
-        200: {"description": "Plan analyzed and recommendations generated (with benchmark if requested)"},
+        200: {
+            "description": "Plan analyzed and recommendations generated (with benchmark if requested)"
+        },
         409: {"description": "Benchmark lock conflict - another benchmark is currently running"},
         422: {"description": "SQL validation rejected or invalid AST"},
         429: {"description": "Rate limit exceeded (max 5 requests per minute)"},
@@ -205,7 +205,9 @@ async def optimize_query(payload: OptimizeRequest, request: Request) -> Optimize
 
         candidate_suggestion = next((s for s in suggestions if not s.existing), None)
         if not candidate_suggestion:
-            notes.append("Benchmark skipped: No non-existing candidate index available to evaluate.")
+            notes.append(
+                "Benchmark skipped: No non-existing candidate index available to evaluate."
+            )
             improvement_label = "NONE"
         else:
             iterations = min(payload.iterations, settings.benchmark_max_iterations)
@@ -244,7 +246,9 @@ async def optimize_query(payload: OptimizeRequest, request: Request) -> Optimize
         improvement_label=improvement_label,
         duration_ms=duration_ms,
         baseline_median_ms=benchmark_result.baseline_stats.median_ms if benchmark_result else None,
-        optimized_median_ms=benchmark_result.optimized_stats.median_ms if benchmark_result else None,
+        optimized_median_ms=benchmark_result.optimized_stats.median_ms
+        if benchmark_result
+        else None,
         speedup_factor=benchmark_result.speedup_factor if benchmark_result else None,
     )
 

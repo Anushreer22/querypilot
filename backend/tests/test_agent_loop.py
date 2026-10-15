@@ -25,9 +25,7 @@ async def test_agent_loop_standard_flow():
     # Step 1: inspect_schema
     fake_llm.enqueue_tool_response(
         ToolCompletionResult(
-            tool_calls=[
-                ToolCall(id="call_1", name="inspect_schema", arguments={"table": "users"})
-            ]
+            tool_calls=[ToolCall(id="call_1", name="inspect_schema", arguments={"table": "users"})]
         )
     )
     # Step 2: validate_sql
@@ -56,9 +54,7 @@ async def test_agent_loop_standard_flow():
     )
     # Step 4: final answer
     fake_llm.enqueue_tool_response(
-        ToolCompletionResult(
-            content="Retrieved the first 3 users successfully from the database."
-        )
+        ToolCompletionResult(content="Retrieved the first 3 users successfully from the database.")
     )
     set_llm_client(fake_llm)
 
@@ -200,9 +196,7 @@ async def test_agent_loop_timeout_stop():
     fake_llm = FakeLLM()
     fake_llm.enqueue_tool_response(
         ToolCompletionResult(
-            tool_calls=[
-                ToolCall(id="c_1", name="inspect_schema", arguments={"table": "users"})
-            ]
+            tool_calls=[ToolCall(id="c_1", name="inspect_schema", arguments={"table": "users"})]
         )
     )
     set_llm_client(fake_llm)
@@ -257,9 +251,7 @@ async def test_agent_loop_persists_runs_and_actions():
             ]
         )
     )
-    fake_llm.enqueue_tool_response(
-        ToolCompletionResult(content="Done inspecting users table.")
-    )
+    fake_llm.enqueue_tool_response(ToolCompletionResult(content="Done inspecting users table."))
     set_llm_client(fake_llm)
 
     loop = AgentLoop()

@@ -68,11 +68,7 @@ async def ask_agent(
 async def get_agent_run(run_id: str) -> AgentRunDetailResponse:
     """Fetch full execution details of an agent run including all tool actions."""
     async with AppAsyncSessionLocal() as session:
-        stmt = (
-            select(AgentRun)
-            .options(selectinload(AgentRun.actions))
-            .where(AgentRun.id == run_id)
-        )
+        stmt = select(AgentRun).options(selectinload(AgentRun.actions)).where(AgentRun.id == run_id)
         result = await session.execute(stmt)
         run_record = result.scalar_one_or_none()
 

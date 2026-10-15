@@ -16,9 +16,7 @@ from app.db.session import shop_engine
 @pytest.mark.asyncio
 async def test_inspect_schema_all_tables():
     """Test inspect_schema returns all 4 allowed business tables."""
-    result = await inspect_schema_tool.handler(
-        inspect_schema_tool.args_schema(table=None)
-    )
+    result = await inspect_schema_tool.handler(inspect_schema_tool.args_schema(table=None))
     assert result["ok"] is True
     schema_text = result["schema"]
     assert "users" in schema_text
@@ -31,9 +29,7 @@ async def test_inspect_schema_all_tables():
 @pytest.mark.asyncio
 async def test_inspect_schema_single_valid_table():
     """Test inspect_schema for a single allowed table."""
-    result = await inspect_schema_tool.handler(
-        inspect_schema_tool.args_schema(table="users")
-    )
+    result = await inspect_schema_tool.handler(inspect_schema_tool.args_schema(table="users"))
     assert result["ok"] is True
     assert result["table"] == "users"
     assert "TABLE users:" in result["schema"]
@@ -43,9 +39,7 @@ async def test_inspect_schema_single_valid_table():
 @pytest.mark.asyncio
 async def test_inspect_schema_disallowed_table():
     """Test inspect_schema rejects system or disallowed tables."""
-    result = await inspect_schema_tool.handler(
-        inspect_schema_tool.args_schema(table="pg_shadow")
-    )
+    result = await inspect_schema_tool.handler(inspect_schema_tool.args_schema(table="pg_shadow"))
     assert result["ok"] is False
     assert "not permitted" in result["error"] or "unknown" in result["error"]
 
@@ -64,9 +58,7 @@ async def test_validate_sql_valid_query():
 @pytest.mark.asyncio
 async def test_validate_sql_forbidden_mutation():
     """Test validate_sql rejects data-modifying statements."""
-    result = await validate_sql_tool.handler(
-        validate_sql_tool.args_schema(sql="DROP TABLE users;")
-    )
+    result = await validate_sql_tool.handler(validate_sql_tool.args_schema(sql="DROP TABLE users;"))
     assert result["ok"] is False
     assert result["reason"] is not None
 
@@ -112,9 +104,7 @@ async def test_execute_readonly_query_row_preview_toggle(monkeypatch):
     """Test that setting AGENT_SEND_ROW_PREVIEW=False omits rows preview."""
     monkeypatch.setattr(settings, "agent_send_row_preview", False)
     result = await execute_readonly_query_tool.handler(
-        execute_readonly_query_tool.args_schema(
-            sql="SELECT id, name FROM users LIMIT 3"
-        )
+        execute_readonly_query_tool.args_schema(sql="SELECT id, name FROM users LIMIT 3")
     )
     assert result["ok"] is True
     assert result["rows"] == []
@@ -148,9 +138,7 @@ async def test_explain_query_rejects_forbidden_statements():
 @pytest.mark.asyncio
 async def test_get_query_history_tool():
     """Test get_query_history returns recent history with safe fields."""
-    result = await get_query_history_tool.handler(
-        get_query_history_tool.args_schema(limit=5)
-    )
+    result = await get_query_history_tool.handler(get_query_history_tool.args_schema(limit=5))
     assert result["ok"] is True
     assert "entries" in result
     assert isinstance(result["entries"], list)
@@ -201,10 +189,7 @@ async def test_analyze_query_plan_tool_rejected():
     from app.agent.tools.analyze_query_plan import analyze_query_plan_tool
 
     result = await analyze_query_plan_tool.handler(
-        analyze_query_plan_tool.args_schema(
-            sql="DROP TABLE users;"
-        )
+        analyze_query_plan_tool.args_schema(sql="DROP TABLE users;")
     )
     assert result["ok"] is False
     assert "error" in result
-

@@ -157,7 +157,9 @@ def test_detect_high_disk_buffer_reads():
 @pytest.mark.asyncio
 async def test_plan_analysis_blocks_insert_from_explain_analyze():
     """CRITICAL SECURITY TEST: Ensure INSERT/UPDATE/DELETE queries are blocked BEFORE reaching EXPLAIN ANALYZE."""
-    malicious_sql = "INSERT INTO users (id, name, email) VALUES (999999, 'Hacker', 'hacker@example.com');"
+    malicious_sql = (
+        "INSERT INTO users (id, name, email) VALUES (999999, 'Hacker', 'hacker@example.com');"
+    )
 
     with pytest.raises(PlanAnalysisError) as exc_info:
         await analyze_query_plan(malicious_sql, run_analyze=True)
@@ -175,9 +177,14 @@ async def test_analyze_query_plan_real_shop_db():
     """Integration test: Execute EXPLAIN (ANALYZE, BUFFERS) on live sample_shop read-only database."""
     sql = "SELECT id, total_amount, created_at FROM orders WHERE created_at >= '2026-01-01' ORDER BY created_at DESC LIMIT 50;"
 
-    sanitized_sql, root_node, findings, planning_time, execution_time, total_cost = (
-        await analyze_query_plan(sql, run_analyze=True)
-    )
+    (
+        sanitized_sql,
+        root_node,
+        findings,
+        planning_time,
+        execution_time,
+        total_cost,
+    ) = await analyze_query_plan(sql, run_analyze=True)
 
     assert "SELECT" in sanitized_sql
     assert isinstance(root_node, PlanNode)
@@ -185,4 +192,3 @@ async def test_analyze_query_plan_real_shop_db():
     assert planning_time >= 0.0
     assert execution_time is not None and execution_time >= 0.0
     assert isinstance(findings, list)
-

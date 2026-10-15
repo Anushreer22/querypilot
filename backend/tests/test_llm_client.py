@@ -85,7 +85,10 @@ class TestOpenAILLMClient:
             json={"choices": [{"message": {"content": '{"sql": "SELECT 1"}'}}]},
         )
 
-        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post, patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with (
+            patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post,
+            patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+        ):
             mock_post.side_effect = [resp_429, resp_200]
             res = await client.complete_json("sys", "user")
             assert res["sql"] == "SELECT 1"
@@ -96,7 +99,10 @@ class TestOpenAILLMClient:
         client = OpenAILLMClient(api_key="sk-test-key")
         resp_429 = httpx.Response(status_code=429, text="Rate limited")
 
-        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post, patch("asyncio.sleep", new_callable=AsyncMock):
+        with (
+            patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post,
+            patch("asyncio.sleep", new_callable=AsyncMock),
+        ):
             mock_post.side_effect = [resp_429, resp_429, resp_429]
             with pytest.raises(LLMRateLimit):
                 await client.complete_json("sys", "user")
@@ -132,4 +138,3 @@ class TestOpenAILLMClient:
             mock_post.return_value = mock_response
             with pytest.raises(LLMInvalidResponse):
                 await client.complete_json("sys", "user")
-

@@ -136,11 +136,7 @@ async def test_optimize_api_audit_ledger_persisted(async_client: AsyncClient):
     assert response.status_code == 200
 
     async with AppAsyncSessionLocal() as session:
-        stmt = (
-            select(OptimizationHistory)
-            .order_by(OptimizationHistory.created_at.desc())
-            .limit(1)
-        )
+        stmt = select(OptimizationHistory).order_by(OptimizationHistory.created_at.desc()).limit(1)
         row = (await session.execute(stmt)).scalar_one_or_none()
         assert row is not None
         assert "products" in row.sql_text

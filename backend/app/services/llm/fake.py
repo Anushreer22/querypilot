@@ -51,18 +51,22 @@ class FakeLLM(LLMClient):
         schema: type[BaseModel] | None = None,
     ) -> dict[str, Any]:
         """Record the call and return the next scripted response or raise scripted error."""
-        self.calls.append({
-            "system_prompt": system_prompt,
-            "user_prompt": user_prompt,
-            "schema": schema,
-        })
+        self.calls.append(
+            {
+                "system_prompt": system_prompt,
+                "user_prompt": user_prompt,
+                "schema": schema,
+            }
+        )
 
         if self.responses:
             next_resp = self.responses.pop(0)
             if isinstance(next_resp, Exception):
                 raise next_resp
             if not isinstance(next_resp, dict):
-                raise LLMInvalidResponse(f"Fake response must be dict, got {type(next_resp).__name__}")
+                raise LLMInvalidResponse(
+                    f"Fake response must be dict, got {type(next_resp).__name__}"
+                )
             return next_resp
 
         return dict(self.default_response)
@@ -73,10 +77,12 @@ class FakeLLM(LLMClient):
         tools: list[dict[str, Any]],
     ) -> ToolCompletionResult:
         """Record the tool call and return scripted ToolCompletionResult or raise scripted error."""
-        self.tool_calls_history.append({
-            "messages": messages,
-            "tools": tools,
-        })
+        self.tool_calls_history.append(
+            {
+                "messages": messages,
+                "tools": tools,
+            }
+        )
 
         if self.tool_responses:
             next_resp = self.tool_responses.pop(0)
@@ -95,7 +101,11 @@ class FakeLLM(LLMClient):
 
         if last_role == "user":
             lower_content = last_content.lower()
-            if "drop table" in lower_content or "delete" in lower_content or "ignore" in lower_content:
+            if (
+                "drop table" in lower_content
+                or "delete" in lower_content
+                or "ignore" in lower_content
+            ):
                 return ToolCompletionResult(
                     content="I cannot execute destructive statements such as DROP TABLE. QueryPilot is restricted to read-only queries."
                 )
@@ -106,7 +116,11 @@ class FakeLLM(LLMClient):
             if "product" in lower_content or "expensive" in lower_content:
                 return ToolCompletionResult(
                     tool_calls=[
-                        ToolCall(id="call_inspect", name="inspect_schema", arguments={"table": "products"})
+                        ToolCall(
+                            id="call_inspect",
+                            name="inspect_schema",
+                            arguments={"table": "products"},
+                        )
                     ]
                 )
             return ToolCompletionResult(
@@ -124,7 +138,9 @@ class FakeLLM(LLMClient):
                             ToolCall(
                                 id="call_exec",
                                 name="execute_readonly_query",
-                                arguments={"sql": "SELECT id, name, price, stock FROM products ORDER BY price DESC LIMIT 5"},
+                                arguments={
+                                    "sql": "SELECT id, name, price, stock FROM products ORDER BY price DESC LIMIT 5"
+                                },
                             )
                         ]
                     )
@@ -133,7 +149,9 @@ class FakeLLM(LLMClient):
                         ToolCall(
                             id="call_exec",
                             name="execute_readonly_query",
-                            arguments={"sql": "SELECT id, name, email FROM users ORDER BY id ASC LIMIT 5"},
+                            arguments={
+                                "sql": "SELECT id, name, email FROM users ORDER BY id ASC LIMIT 5"
+                            },
                         )
                     ]
                 )
@@ -143,5 +161,3 @@ class FakeLLM(LLMClient):
                 )
 
         return self.default_tool_response
-
-

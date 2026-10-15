@@ -14,6 +14,7 @@ Guarantees:
 """
 
 from dataclasses import dataclass
+from typing import Any
 
 import sqlglot
 from sqlglot import exp
@@ -217,8 +218,12 @@ class ValidationResult:
     limit_injected: bool = False
 
 
-def _check_function_node(node: exp.Expression) -> tuple[bool, str]:
+def _check_function_node(node: Any) -> tuple[bool, str]:
     """Validate that a function node is on the approved safe allowlist."""
+    # Logical connectors (e.g. AND, OR) inherit from exp.Func in sqlglot but are operators
+    if isinstance(node, exp.Connector):
+        return True, ""
+
     if isinstance(node, FORBIDDEN_INFO_CLASSES):
         return False, f"Information function '{type(node).__name__}' is not permitted"
 
@@ -232,9 +237,7 @@ def _check_function_node(node: exp.Expression) -> tuple[bool, str]:
         if type(node) in ALLOWED_TYPED_CLASSES:
             return True, ""
         fn_name = (
-            getattr(node, "name", "")
-            or getattr(node, "key", "")
-            or type(node).__name__
+            getattr(node, "name", "") or getattr(node, "key", "") or type(node).__name__
         ).lower()
         if fn_name in ALLOWED_FUNCTION_NAMES:
             return True, ""
@@ -306,9 +309,7 @@ def validate_sql(
 
     # 4. Collect CTE aliases in query scope
     cte_names: set[str] = {
-        cte.alias.lower()
-        for cte in root.find_all(exp.CTE)
-        if getattr(cte, "alias", None)
+        cte.alias.lower() for cte in root.find_all(exp.CTE) if getattr(cte, "alias", None)
     }
 
     # 5. Walk AST for security constraints
@@ -322,11 +323,15 @@ def validate_sql(
 
         # Reject SELECT ... INTO
         if isinstance(node, exp.Into):
-            return ValidationResult(ok=False, reason="SELECT ... INTO clauses are strictly prohibited")
+            return ValidationResult(
+                ok=False, reason="SELECT ... INTO clauses are strictly prohibited"
+            )
 
         # Reject locking clauses (FOR UPDATE, FOR SHARE, etc.)
         if isinstance(node, exp.Lock):
-            return ValidationResult(ok=False, reason="Row locking clauses (FOR UPDATE/SHARE) are not permitted")
+            return ValidationResult(
+                ok=False, reason="Row locking clauses (FOR UPDATE/SHARE) are not permitted"
+            )
 
         # Reject information pseudo-columns/functions (e.g. SELECT user, current_user, session_user)
         if isinstance(node, FORBIDDEN_INFO_CLASSES):

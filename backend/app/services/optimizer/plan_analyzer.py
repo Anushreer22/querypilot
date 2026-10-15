@@ -29,18 +29,24 @@ def parse_plan_tree(raw_node: dict[str, Any]) -> PlanNode:
     return PlanNode(
         node_type=raw_node.get("Node Type", "Unknown"),
         relation_name=raw_node.get("Relation Name"),
-        schema_name=raw_node.get("Schema"),
+        schema=raw_node.get("Schema"),
         alias=raw_node.get("Alias"),
         startup_cost=float(raw_node.get("Startup Cost", 0.0)),
         total_cost=float(raw_node.get("Total Cost", 0.0)),
         plan_rows=float(raw_node.get("Plan Rows", 0.0)),
         plan_width=int(raw_node.get("Plan Width", 0)),
-        actual_startup_time=float(raw_node["Actual Startup Time"]) if "Actual Startup Time" in raw_node else None,
-        actual_total_time=float(raw_node["Actual Total Time"]) if "Actual Total Time" in raw_node else None,
+        actual_startup_time=float(raw_node["Actual Startup Time"])
+        if "Actual Startup Time" in raw_node
+        else None,
+        actual_total_time=float(raw_node["Actual Total Time"])
+        if "Actual Total Time" in raw_node
+        else None,
         actual_rows=float(raw_node["Actual Rows"]) if "Actual Rows" in raw_node else None,
         actual_loops=int(raw_node["Actual Loops"]) if "Actual Loops" in raw_node else None,
         filter=raw_node.get("Filter"),
-        rows_removed_by_filter=int(raw_node["Rows Removed by Filter"]) if "Rows Removed by Filter" in raw_node else None,
+        rows_removed_by_filter=int(raw_node["Rows Removed by Filter"])
+        if "Rows Removed by Filter" in raw_node
+        else None,
         index_name=raw_node.get("Index Name"),
         index_cond=raw_node.get("Index Cond"),
         hash_cond=raw_node.get("Hash Cond"),
@@ -49,8 +55,12 @@ def parse_plan_tree(raw_node: dict[str, Any]) -> PlanNode:
         sort_method=raw_node.get("Sort Method"),
         sort_space_used=int(raw_node["Sort Space Used"]) if "Sort Space Used" in raw_node else None,
         sort_space_type=raw_node.get("Sort Space Type"),
-        shared_hit_blocks=int(raw_node["Shared Hit Blocks"]) if "Shared Hit Blocks" in raw_node else None,
-        shared_read_blocks=int(raw_node["Shared Read Blocks"]) if "Shared Read Blocks" in raw_node else None,
+        shared_hit_blocks=int(raw_node["Shared Hit Blocks"])
+        if "Shared Hit Blocks" in raw_node
+        else None,
+        shared_read_blocks=int(raw_node["Shared Read Blocks"])
+        if "Shared Read Blocks" in raw_node
+        else None,
         plans=child_plans,
     )
 
@@ -62,10 +72,21 @@ def extract_columns_from_expression(expr: str | None) -> list[str]:
     # Match alphanumeric column identifiers optionally qualified (e.g., o.created_at, status)
     tokens = re.findall(r"\b([a-zA-Z_][a-zA-Z0-9_]*)\b", expr)
     known_columns = {
-        "id", "name", "email", "country", "created_at",
-        "category", "price", "stock",
-        "user_id", "status", "total_amount",
-        "order_id", "product_id", "quantity", "unit_price",
+        "id",
+        "name",
+        "email",
+        "country",
+        "created_at",
+        "category",
+        "price",
+        "stock",
+        "user_id",
+        "status",
+        "total_amount",
+        "order_id",
+        "product_id",
+        "quantity",
+        "unit_price",
     }
     extracted = []
     for token in tokens:
@@ -145,7 +166,9 @@ def detect_plan_findings(root_node: PlanNode) -> list[PlanFinding]:
                 )
 
         # 4. Sort Spills to Disk
-        if (node.sort_space_type and node.sort_space_type.lower() == "disk") or (node.sort_method and "external" in node.sort_method.lower()):
+        if (node.sort_space_type and node.sort_space_type.lower() == "disk") or (
+            node.sort_method and "external" in node.sort_method.lower()
+        ):
             findings.append(
                 PlanFinding(
                     type="sort_disk_spill",
@@ -153,13 +176,19 @@ def detect_plan_findings(root_node: PlanNode) -> list[PlanFinding]:
                     plan_node=node.node_type,
                     table=table,
                     columns=node.sort_key or [],
-                    evidence={"sort_space_type": node.sort_space_type, "sort_space_kb": node.sort_space_used, "sort_method": node.sort_method},
+                    evidence={
+                        "sort_space_type": node.sort_space_type,
+                        "sort_space_kb": node.sort_space_used,
+                        "sort_method": node.sort_method,
+                    },
                     explanation=f"Sort spilled to disk ({node.sort_space_type}, {node.sort_space_used} KB). Exceeds work_mem buffer.",
                 )
             )
 
         # 5. Expensive Nested Loops
-        if node.node_type == "Nested Loop" and ((node.actual_loops and node.actual_loops > 1000) or node.total_cost > 20000):
+        if node.node_type == "Nested Loop" and (
+            (node.actual_loops and node.actual_loops > 1000) or node.total_cost > 20000
+        ):
             findings.append(
                 PlanFinding(
                     type="expensive_nested_loop",
@@ -250,7 +279,9 @@ async def analyze_query_plan(
     first_item = plan_data[0]
     raw_root_plan = first_item.get("Plan", {})
     planning_time_ms = float(first_item.get("Planning Time", 0.0))
-    execution_time_ms = float(first_item["Execution Time"]) if "Execution Time" in first_item else None
+    execution_time_ms = (
+        float(first_item["Execution Time"]) if "Execution Time" in first_item else None
+    )
     total_cost = float(raw_root_plan.get("Total Cost", 0.0))
 
     root_node = parse_plan_tree(raw_root_plan)

@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field
 class PlanNode(BaseModel):
     """Recursive representation of a PostgreSQL EXPLAIN execution plan node."""
 
+    model_config = {"populate_by_name": True}
+
     node_type: str
     relation_name: str | None = None
     schema_name: str | None = Field(default=None, alias="schema")

@@ -98,4 +98,3 @@ class TestQueryExecutor:
             assert row.sql_text == "SELECT count(*) FROM products;"
             assert float(row.duration_ms) == 4.25
             assert row.row_count == 100
-

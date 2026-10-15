@@ -166,4 +166,48 @@ Audit entries are persisted in a separate transaction using the privileged `app_
 | **Row Memory Exhaustion** | `SELECT * FROM order_items` | Layer 1 & Layer 2 | Clamped to `LIMIT 1000` & row capping |
 | **Row Locking (Deadlocks)** | `SELECT * FROM orders FOR UPDATE` | Layer 1 | Rejected at AST (`422 Locking clauses prohibited`) |
 | **Audit Log Tampering** | Trying to modify `query_history` | Layer 3 | `readonly_user` has zero access to `querypilot_app` |
+| **Oversized Request DoS** | Payloads > 1 MB | Layer 5 (Body Size Middleware) | Rejected (`413 Content Too Large`) |
+| **Credential / Log Leak** | Secrets in logs or error traces | Layer 5 (Redaction Filter & 500 Handler) | Redacted before output (`[REDACTED]`) |
+
+---
+
+## 7. Layer 5: Application & API Hardening (Phase 8A)
+
+Phase 8A introduced critical infrastructure-level security safeguards:
+
+1. **Request Body Size Limit (`BodySizeLimitMiddleware`)**:
+   - Strictly enforces a 1 MB payload ceiling (`max_request_body_bytes = 1_048_576`).
+   - Requests exceeding 1 MB are terminated immediately with `413 Content Too Large`.
+2. **Question Length Enforcement**:
+   - User queries to `/api/ask` and `/api/agent/ask` are validated to a maximum of 500 characters, mitigating prompt bloat attacks.
+3. **Security Headers (`SecurityHeadersMiddleware`)**:
+   - `X-Content-Type-Options: nosniff` (prevents MIME type sniffing)
+   - `X-Frame-Options: DENY` (clickjacking prevention)
+   - `Strict-Transport-Security: max-age=31536000; includeSubDomains` (enforces HTTPS)
+   - `Content-Security-Policy: default-src 'self'` (restricts script/content origins)
+4. **Sanitized Global Error Handler**:
+   - Unhandled exceptions return generic JSON: `{"detail": "Internal server error occurred.", "request_id": "<uuid>"}`.
+   - Raw stack traces, database credentials, internal table structures, and environment paths are never exposed to clients.
+5. **Structured JSON Logging & Redaction Filter (`app.core.logging`)**:
+   - All logs format as structured JSON with contextual metadata (`request_id`, `route`, `latency_ms`, `status_code`, `run_id`, `step`).
+   - A custom `RedactionFilter` scrubs:
+     * LLM API keys (`AIzaSy...`, `sk-...`)
+     * Database passwords and connection URIs
+     * Full prompt strings (`<user_question>...</user_question>`)
+     * Raw query result row payloads
+6. **Automated Attack Test Suite (`tests/security/`)**:
+   - Contains 43 dedicated attack scenarios covering SQL injection variants, prompt injection / tool smuggling, database privilege escalation, API boundaries, and optimizer benchmark isolation.
+
+---
+
+## 8. Remaining Limitations & Future Hardening
+
+1. **Authentication & Authorization**:
+   - QueryPilot currently assumes network-isolated developer environments. Production deployment requires JWT / OAuth2 bearer token authentication to bind query executions to individual authenticated user identities.
+2. **Horizontal Distributed Rate Limiting**:
+   - The current `InMemoryRateLimiter` operates in-process per application replica. Scaling across multiple container replicas requires a centralized Redis token bucket.
+3. **Row-Level Security (RLS)**:
+   - For multi-tenant databases, PostgreSQL Row Level Security policies should be configured on `sample_shop` tables using session variables (e.g. `SET LOCAL app.current_tenant_id = '...'`).
+4. **Network Transport Encryption**:
+   - In production cloud environments, all database connections must enforce SSL/TLS with verified CA certificates (`sslmode=verify-full`).
 

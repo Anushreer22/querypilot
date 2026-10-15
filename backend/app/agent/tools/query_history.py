@@ -27,11 +27,7 @@ async def handle_get_query_history(args: GetQueryHistoryArgs) -> dict[str, Any]:
 
     try:
         async with AppAsyncSessionLocal() as session:
-            stmt = (
-                select(QueryHistory)
-                .order_by(desc(QueryHistory.created_at))
-                .limit(safe_limit)
-            )
+            stmt = select(QueryHistory).order_by(desc(QueryHistory.created_at)).limit(safe_limit)
             result = await session.execute(stmt)
             records = result.scalars().all()
 

@@ -41,11 +41,7 @@ async def test_agent_ask_completed_200(async_client: httpx.AsyncClient):
         )
     )
     # Step 2: final answer
-    fake_llm.enqueue_tool_response(
-        ToolCompletionResult(
-            content="Found 2 users: Alice and Bob."
-        )
-    )
+    fake_llm.enqueue_tool_response(ToolCompletionResult(content="Found 2 users: Alice and Bob."))
     set_llm_client(fake_llm)
 
     response = await async_client.post(
@@ -69,9 +65,7 @@ async def test_agent_ask_clarification_200(async_client: httpx.AsyncClient):
     """Test POST /api/agent/ask returns 200 for clarification without query execution."""
     fake_llm = FakeLLM()
     fake_llm.enqueue_tool_response(
-        ToolCompletionResult(
-            content="Could you clarify if you mean active users or all users?"
-        )
+        ToolCompletionResult(content="Could you clarify if you mean active users or all users?")
     )
     set_llm_client(fake_llm)
 
@@ -151,9 +145,7 @@ async def test_agent_ask_timeout_504(async_client: httpx.AsyncClient, monkeypatc
     fake_llm = FakeLLM()
     fake_llm.enqueue_tool_response(
         ToolCompletionResult(
-            tool_calls=[
-                ToolCall(id="tc_1", name="inspect_schema", arguments={"table": "users"})
-            ]
+            tool_calls=[ToolCall(id="tc_1", name="inspect_schema", arguments={"table": "users"})]
         )
     )
     set_llm_client(fake_llm)
@@ -217,9 +209,7 @@ async def test_agent_get_run_detail_and_list(async_client: httpx.AsyncClient):
             ]
         )
     )
-    fake_llm.enqueue_tool_response(
-        ToolCompletionResult(content="Found products table schema.")
-    )
+    fake_llm.enqueue_tool_response(ToolCompletionResult(content="Found products table schema."))
     set_llm_client(fake_llm)
 
     # 1. Create a run

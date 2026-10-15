@@ -281,6 +281,45 @@ Developing a high-performance database client in the browser introduces specific
 - **Performance**: Instant initial load with sub-100ms response times and smooth 60fps virtualized scrolling over 1,000 rows.
 - **Developer Experience**: Fast, ergonomic feedback loop for crafting, debugging, and optimizing database queries.
 
+---
+
+## ADR 007: Phase 8A - Testing, Evaluation Harness, and Security Hardening Architecture
+
+### Context
+Following Phases 1 through 7, QueryPilot contains a full-stack NL-to-SQL system with AST-based query validation, read-only transaction execution, autonomous multi-turn reasoning loops, and copy-database query benchmarking. To ensure production readiness, reliability, and security compliance:
+1. **Model Evaluation & Drift Prevention**: Evaluating natural language to SQL models requires an objective, reproducible benchmark. Comparing raw SQL text is fragile (syntactic differences like aliases, CTEs, or joins produce identical results while failing string equality).
+2. **Ambiguity & Adversarial Robustness**: Real-world users submit ambiguous questions (requiring clarifications rather than hallucinated SQL) and adversarial prompt injections (attempting data modification, privilege escalation, or catalog exfiltration).
+3. **Attack Surface & Operational Hardening**: The API must enforce payload size limits (DoS prevention), question length limits, strict security headers, and structured JSON logs that redact secrets, database passwords, system prompts, and raw data rows. Errors must never leak internal stack traces.
+
+### Decision
+1. **Result-Set-Based Evaluation Harness (`backend/tests/eval/`)**:
+   - Curated 30-question benchmark suite: 20 answerable (with verified reference SQL), 5 ambiguous, and 5 adversarial.
+   - Result comparator (`comparator.py`) normalizes row ordering for unordered queries, rounds floats to 2 decimal places, standardizes dates to ISO format, and compares value tuples independent of column aliases.
+   - Dual-mode benchmark runner (`scripts/run_eval.py`) measures Execution Accuracy, Clarification Precision, Safe Refusal Rate, SQL Validity Rate, Repair Rate, and p50/p95 latency across both `/api/ask` and `/api/agent/ask`.
+   - Built-in Cost Guard (`max_eval_calls = 70`) prevents runaway LLM billing.
+   - Supports both offline deterministic verification with `FakeLLM` in CI and opt-in live LLM execution (`--real-llm`).
+   - Automatically saves comparison metrics to `docs/EVAL_RESULTS.md` and JSON format with timestamp and git commit hash.
+
+2. **Automated Security Attack Test Suite (`backend/tests/security/`)**:
+   - 43 comprehensive attack scenarios:
+     * SQL-level: stacked statements, comment tricks, case variation mutations, dollar quotes, dangerous/table-valued functions, SELECT INTO, locking clauses, CTE mutations, system catalogs (`pg_catalog`, `information_schema`), cross-schema access, limit clamping, cartesian join timeouts, and very long inputs.
+     * Prompt-level: LLM-generated DDL/DML mutation attempts, tool argument DDL smuggling, prompt injections embedded within query cell results, and calls to non-existent tools.
+     * Privilege-level: direct `readonly_user` connections attempting INSERT, UPDATE, DELETE, TRUNCATE, DROP, CREATE INDEX, CREATE TABLE, COPY TO PROGRAM, and SELECT from `pg_authid`.
+     * API-level: oversized payloads (1MB limit -> 413), malformed JSON, 500-char question limits, secret scanning across error responses, and operational telemetry.
+     * Optimizer-level: verification that candidate indexes are never created on live `sample_shop`, benchmark lock concurrency conflicts return 409, and candidate indexes on `sample_shop_bench` are torn down in `finally` blocks.
+
+3. **Application & Infrastructure Hardening**:
+   - `BodySizeLimitMiddleware`: 1 MB body size cap returning HTTP 413.
+   - `SecurityHeadersMiddleware`: Injects `nosniff`, `X-Frame-Options: DENY`, `HSTS`, and `CSP`.
+   - Global sanitized 500 handler returning `{ "detail": "Internal server error occurred.", "request_id": "<uuid>" }`.
+   - Structured JSON logging (`app.core.logging`) with contextvars (`request_id`, `run_id`, `step`) and `RedactionFilter` scrubbing API keys, DB passwords, system prompts, and raw row payloads.
+   - In-memory metrics telemetry collector (`/api/metrics` and `/metrics`).
+
+### Consequences
+- **Security**: Complete multi-layered defense-in-depth proven through 43 automated security tests.
+- **Traceability**: All requests and agent reasoning steps are traceable via correlated `request_id` and `run_id` without sensitive data leakage in log sinks.
+- **Reproducibility**: Changes to models, prompts, or validators can be instantly verified against the 30-question evaluation benchmark in under 5 seconds with FakeLLM, or against live models on demand.
+
 
 
 

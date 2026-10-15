@@ -143,10 +143,7 @@ async def execute_readonly_query(
         truncated = len(raw_rows) > max_rows
         final_rows = raw_rows[:max_rows]
 
-        formatted_rows = [
-            {k: _serialize_value(v) for k, v in row.items()}
-            for row in final_rows
-        ]
+        formatted_rows = [{k: _serialize_value(v) for k, v in row.items()} for row in final_rows]
 
         return QueryResult(
             columns=columns,
@@ -200,7 +197,9 @@ async def log_query_history(
                 source=source[:50],
                 sql_text=sql_text[:10000],
                 status=status,
-                duration_ms=Decimal(str(round(duration_ms, 2))) if duration_ms is not None else None,
+                duration_ms=Decimal(str(round(duration_ms, 2)))
+                if duration_ms is not None
+                else None,
                 row_count=row_count,
                 error_message=error_message[:2000] if error_message else None,
                 question=question[:2000] if question else None,

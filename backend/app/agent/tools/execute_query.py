@@ -60,10 +60,7 @@ async def handle_execute_readonly_query(args: ExecuteReadonlyQueryArgs) -> dict[
     preview_rows: list[dict[str, Any]] = []
     if settings.agent_send_row_preview:
         capped = query_res.rows[:20]
-        preview_rows = [
-            {k: _truncate_cell(v) for k, v in row.items()}
-            for row in capped
-        ]
+        preview_rows = [{k: _truncate_cell(v) for k, v in row.items()} for row in capped]
 
     return {
         "ok": True,

@@ -97,5 +97,3 @@ class LLMClient(ABC):
             LLMInvalidResponse: If response is unparseable or violates schema.
             LLMUnavailable: If provider service is down or returns 5xx.
         """
-
-

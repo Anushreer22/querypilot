@@ -17,14 +17,20 @@ def test_generate_safe_ddl_valid_single_and_composite():
 
     comp_name, comp_ddl = generate_safe_ddl("orders", ["status", "created_at"])
     assert comp_name == "ix_orders_status_created_at"
-    assert comp_ddl == 'CREATE INDEX "ix_orders_status_created_at" ON "orders" ("status", "created_at");'
+    assert (
+        comp_ddl
+        == 'CREATE INDEX "ix_orders_status_created_at" ON "orders" ("status", "created_at");'
+    )
 
 
 def test_generate_safe_ddl_with_partial_predicate():
     """Verify partial index DDL with sanitized WHERE clause."""
     name, ddl = generate_safe_ddl("orders", ["created_at"], predicate="status = 'delivered'")
     assert "ix_orders_created_at_partial" in name
-    assert ddl == 'CREATE INDEX "' + name + '" ON "orders" ("created_at") WHERE (status = \'delivered\');'
+    assert (
+        ddl
+        == 'CREATE INDEX "' + name + '" ON "orders" ("created_at") WHERE (status = \'delivered\');'
+    )
 
 
 def test_generate_safe_ddl_rejects_disallowed_table():
@@ -43,7 +49,6 @@ def test_generate_safe_ddl_rejects_disallowed_or_injected_column():
 
     with pytest.raises(ValueError, match="not a valid column"):
         generate_safe_ddl("users", ["password_hash"])
-
 
 
 def test_advise_indexes_composite_equality_first():

@@ -182,21 +182,23 @@ class AgentLoop:
                 tool_calls_to_run: list[ToolCall] = completion.tool_calls[:3]
 
                 # Append assistant tool call message to history
-                messages.append({
-                    "role": "assistant",
-                    "content": completion.content or None,
-                    "tool_calls": [
-                        {
-                            "id": tc.id,
-                            "type": "function",
-                            "function": {
-                                "name": tc.name,
-                                "arguments": json.dumps(tc.arguments),
-                            },
-                        }
-                        for tc in tool_calls_to_run
-                    ],
-                })
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": completion.content or None,
+                        "tool_calls": [
+                            {
+                                "id": tc.id,
+                                "type": "function",
+                                "function": {
+                                    "name": tc.name,
+                                    "arguments": json.dumps(tc.arguments),
+                                },
+                            }
+                            for tc in tool_calls_to_run
+                        ],
+                    }
+                )
 
                 step_aborted = False
                 for tc in tool_calls_to_run:
@@ -209,7 +211,10 @@ class AgentLoop:
                     is_ok = tool_output.get("ok", True)
                     err_msg = str(tool_output.get("error", ""))
                     if not is_ok:
-                        if any(k in err_msg.lower() for k in ["reject", "disallow", "not permitted", "forbidden"]):
+                        if any(
+                            k in err_msg.lower()
+                            for k in ["reject", "disallow", "not permitted", "forbidden"]
+                        ):
                             action_status = "rejected"
                         else:
                             action_status = "error"
@@ -231,7 +236,9 @@ class AgentLoop:
                         elif tc.name == "validate_sql":
                             summary = f"Validated SQL (ok={tool_output.get('ok')}, limit_injected={tool_output.get('limit_injected')})"
                         elif tc.name == "explain_query":
-                            summary = f"Generated plan: {tool_output.get('summary', 'Plan generated')}"
+                            summary = (
+                                f"Generated plan: {tool_output.get('summary', 'Plan generated')}"
+                            )
                         elif tc.name == "inspect_schema":
                             summary = f"Inspected schema (table={tc.arguments.get('table', 'all')})"
                         else:
@@ -256,9 +263,7 @@ class AgentLoop:
                             repeated_failure_count += 1
                             if repeated_failure_count >= 2:
                                 status = "repeated_failure"
-                                final_answer = (
-                                    f"Agent stopped due to repeated identical failing tool call '{tc.name}'."
-                                )
+                                final_answer = f"Agent stopped due to repeated identical failing tool call '{tc.name}'."
                                 step_aborted = True
                         else:
                             last_failed_signature = signature
@@ -272,11 +277,13 @@ class AgentLoop:
                     if len(output_serialized) > 4000:
                         output_serialized = output_serialized[:4000] + "... [output truncated]"
 
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tc.id,
-                        "content": f"<tool_output name=\"{tc.name}\">\n{output_serialized}\n</tool_output>",
-                    })
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tc.id,
+                            "content": f'<tool_output name="{tc.name}">\n{output_serialized}\n</tool_output>',
+                        }
+                    )
 
                     if step_aborted:
                         break

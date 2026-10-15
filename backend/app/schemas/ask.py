@@ -11,7 +11,7 @@ class AskRequest(BaseModel):
     question: str = Field(
         ...,
         min_length=1,
-        max_length=1000,
+        max_length=500,
         description="Natural language question to query against the sample_shop database",
     )
 
@@ -43,4 +43,3 @@ class AskResponse(BaseModel):
     repaired: bool = False
     clarification: ClarificationResponse | None = None
     status: str  # 'success', 'clarification', 'rejected', 'error', 'timeout'
-

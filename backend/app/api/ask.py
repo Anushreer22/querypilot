@@ -31,4 +31,3 @@ async def ask_endpoint(payload: AskRequest, request: Request) -> AskResponse:
     """
     client_ip = request.client.host if request.client else "127.0.0.1"
     return await ask_question(question=payload.question, client_ip=client_ip)
-

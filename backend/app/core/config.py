@@ -27,9 +27,7 @@ class Settings(BaseSettings):
     )
 
     # Benchmark Database Connections (Phase 6 - isolated copy database)
-    bench_database_url: str = (
-        "postgresql+psycopg://readonly_user:querypilot_readonly_pass@127.0.0.1:5436/sample_shop_bench"
-    )
+    bench_database_url: str = "postgresql+psycopg://readonly_user:querypilot_readonly_pass@127.0.0.1:5436/sample_shop_bench"
     bench_admin_database_url: str = (
         "postgresql+psycopg://postgres:querypilot_postgres_pass@127.0.0.1:5436/sample_shop_bench"
     )
@@ -55,12 +53,18 @@ class Settings(BaseSettings):
     # Ask Endpoint & Security Controls
     rate_limit_ask_per_minute: int = 10
     schema_cache_ttl_seconds: int = 300
+    max_request_body_bytes: int = 1_048_576  # 1 MB body size cap
+    max_question_length: int = 500
 
     # Agent Loop Controls (Phase 5)
     agent_max_steps: int = 6
     agent_timeout_seconds: float = 60.0
     agent_send_row_preview: bool = True
     rate_limit_agent_per_minute: int = 10
+
+    # Evaluation Controls (Phase 8A)
+    max_eval_calls: int = 70
+    run_real_llm_eval: bool = False
 
     @field_validator("cors_origins", mode="before")
     @classmethod

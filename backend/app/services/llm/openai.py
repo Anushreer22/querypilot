@@ -41,7 +41,9 @@ class OpenAILLMClient(LLMClient):
         self.api_key = api_key if api_key is not None else settings.openai_api_key
         self.model = model or settings.llm_model
         self.base_url = (base_url or settings.openai_base_url).rstrip("/")
-        self.timeout_seconds = timeout_seconds if timeout_seconds is not None else settings.llm_timeout_seconds
+        self.timeout_seconds = (
+            timeout_seconds if timeout_seconds is not None else settings.llm_timeout_seconds
+        )
         self.max_output_tokens = max_output_tokens or settings.llm_max_output_tokens
         self.temperature = temperature if temperature is not None else settings.llm_temperature
 
@@ -125,7 +127,9 @@ class OpenAILLMClient(LLMClient):
                 try:
                     parsed_json = json.loads(content)
                 except json.JSONDecodeError as err:
-                    raise LLMInvalidResponse(f"Failed to parse LLM response as JSON: {err}") from err
+                    raise LLMInvalidResponse(
+                        f"Failed to parse LLM response as JSON: {err}"
+                    ) from err
 
                 if not isinstance(parsed_json, dict):
                     raise LLMInvalidResponse("LLM JSON output root must be an object/dict")
@@ -231,14 +235,18 @@ class OpenAILLMClient(LLMClient):
                         raw_args = fn.get("arguments", "{}")
 
                         try:
-                            args_dict = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+                            args_dict = (
+                                json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+                            )
                         except json.JSONDecodeError as err:
                             raise LLMInvalidResponse(
                                 f"Failed to parse tool call arguments for '{fn_name}' as JSON: {err}"
                             ) from err
 
                         if not isinstance(args_dict, dict):
-                            raise LLMInvalidResponse(f"Tool call arguments for '{fn_name}' must be a JSON object")
+                            raise LLMInvalidResponse(
+                                f"Tool call arguments for '{fn_name}' must be a JSON object"
+                            )
 
                         parsed_tool_calls.append(
                             ToolCall(
@@ -252,7 +260,9 @@ class OpenAILLMClient(LLMClient):
                 if content is not None:
                     return ToolCompletionResult(tool_calls=None, content=content)
 
-                raise LLMInvalidResponse("OpenAI returned response with neither tool_calls nor content")
+                raise LLMInvalidResponse(
+                    "OpenAI returned response with neither tool_calls nor content"
+                )
 
             except httpx.TimeoutException as err:
                 raise LLMTimeout(
@@ -270,5 +280,3 @@ class OpenAILLMClient(LLMClient):
                     backoff *= 2.0
                     continue
                 raise LLMUnavailable(f"Network error connecting to OpenAI: {err}") from err
-
-

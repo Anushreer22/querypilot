@@ -32,4 +32,3 @@ __all__ = [
     "inspect_schema_tool",
     "validate_sql_tool",
 ]
-

@@ -85,4 +85,3 @@ class QueryHistoryResponse(BaseModel):
 
     items: list[QueryHistoryItem]
     total: int
-

@@ -12,7 +12,7 @@ class AgentAskRequest(BaseModel):
     question: str = Field(
         ...,
         min_length=3,
-        max_length=1000,
+        max_length=500,
         description="Natural language question to be investigated by the autonomous database agent.",
         examples=["What are the top 5 highest-spending customers and their total order counts?"],
     )

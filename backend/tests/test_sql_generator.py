@@ -90,7 +90,10 @@ class TestSqlGenerator:
         assert resp.sql == "SELECT count(*) FROM products"
         assert len(fake.calls) == 2
         # Verify the retry prompt included the error notice
-        assert "CRITICAL: Your previous response failed schema validation" in fake.calls[1]["user_prompt"]
+        assert (
+            "CRITICAL: Your previous response failed schema validation"
+            in fake.calls[1]["user_prompt"]
+        )
 
     async def test_generate_sql_response_fails_after_retry(self):
         # Both attempts invalid

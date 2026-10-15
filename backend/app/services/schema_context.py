@@ -71,7 +71,9 @@ def format_schema_description(
         fk_map = {}
         for fk in meta.get("foreign_keys", []):
             referred = fk.get("referred_table")
-            for local_col, ref_col in zip(fk.get("constrained_columns", []), fk.get("referred_columns", []), strict=False):
+            for local_col, ref_col in zip(
+                fk.get("constrained_columns", []), fk.get("referred_columns", []), strict=False
+            ):
                 fk_map[local_col] = f"{referred}.{ref_col}"
 
         for col in meta.get("columns", []):
@@ -116,6 +118,7 @@ async def get_schema_context(force_refresh: bool = False, filter_table: str | No
             return _cached_schema_text
 
     async with shop_engine.connect() as conn:
+
         def _inspect_schema(sync_conn) -> dict[str, dict[str, Any]]:
             inspector = inspect(sync_conn)
             table_names = inspector.get_table_names(schema="public")
@@ -134,7 +137,9 @@ async def get_schema_context(force_refresh: bool = False, filter_table: str | No
                         }
                         for col in inspector.get_columns(t, schema="public")
                     ],
-                    "primary_key": inspector.get_pk_constraint(t, schema="public").get("constrained_columns", []),
+                    "primary_key": inspector.get_pk_constraint(t, schema="public").get(
+                        "constrained_columns", []
+                    ),
                     "foreign_keys": inspector.get_foreign_keys(t, schema="public"),
                 }
             return schema_data
@@ -148,5 +153,3 @@ async def get_schema_context(force_refresh: bool = False, filter_table: str | No
     if filter_table:
         return format_schema_description(tables_data, filter_table=filter_table)
     return _cached_schema_text
-
-

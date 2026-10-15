@@ -69,9 +69,13 @@ Return the corrected JSON object matching the required schema.
 class GeneratedSQLResponse(BaseModel):
     """Pydantic model validating structured JSON output from the SQL generator."""
 
-    sql: str = Field(..., description="PostgreSQL SELECT query, or empty string if clarification needed")
+    sql: str = Field(
+        ..., description="PostgreSQL SELECT query, or empty string if clarification needed"
+    )
     explanation: str = Field(..., description="Human-readable explanation of query logic")
-    assumptions: list[str] = Field(default_factory=list, description="Assumptions made by the model")
+    assumptions: list[str] = Field(
+        default_factory=list, description="Assumptions made by the model"
+    )
     needs_clarification: bool = Field(False, description="True if the request is ambiguous")
     clarification_question: str | None = Field(None, description="Clarification question if needed")
 
@@ -119,7 +123,10 @@ async def generate_sql_response(
         return GeneratedSQLResponse.model_validate(raw_response)
     except (ValidationError, LLMInvalidResponse) as err:
         first_error = str(err)
-        logger.warning("LLM response failed schema validation: %s. Attempting 1-shot JSON retry...", first_error)
+        logger.warning(
+            "LLM response failed schema validation: %s. Attempting 1-shot JSON retry...",
+            first_error,
+        )
 
     # One-shot retry asking LLM to correct the JSON structure
     correction_user_prompt = (
