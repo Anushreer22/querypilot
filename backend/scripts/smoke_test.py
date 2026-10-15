@@ -42,7 +42,9 @@ def run_smoke_tests(base_url: str) -> bool:
             if r.status_code == 200 and r.json().get("status") == "ok":
                 log_step("1. Liveness Probe (/health)", True, f"HTTP {r.status_code}")
             else:
-                log_step("1. Liveness Probe (/health)", False, f"HTTP {r.status_code} - {r.text[:80]}")
+                log_step(
+                    "1. Liveness Probe (/health)", False, f"HTTP {r.status_code} - {r.text[:80]}"
+                )
                 all_passed = False
         except Exception as exc:
             log_step("1. Liveness Probe (/health)", False, str(exc))
@@ -73,7 +75,11 @@ def run_smoke_tests(base_url: str) -> bool:
             tables = [t.get("name") for t in data.get("tables", [])]
             expected = {"users", "products", "orders", "order_items"}
             if r.status_code == 200 and expected.issubset(set(tables)):
-                log_step("3. Schema Catalog (/api/schema)", True, f"Found {len(tables)} tables: {', '.join(tables)}")
+                log_step(
+                    "3. Schema Catalog (/api/schema)",
+                    True,
+                    f"Found {len(tables)} tables: {', '.join(tables)}",
+                )
             else:
                 log_step("3. Schema Catalog (/api/schema)", False, f"Tables: {tables}")
                 all_passed = False
@@ -83,13 +89,19 @@ def run_smoke_tests(base_url: str) -> bool:
 
         # 4. POST /api/query/execute (Read-only SELECT)
         try:
-            r = client.post("/api/query/execute", json={"sql": "SELECT count(*) AS total_users FROM users;"})
+            r = client.post(
+                "/api/query/execute", json={"sql": "SELECT count(*) AS total_users FROM users;"}
+            )
             data = r.json()
             if r.status_code == 200 and data.get("rows"):
                 count_val = data["rows"][0][0]
                 log_step("4. Safe SELECT (/api/query/execute)", True, f"users count = {count_val}")
             else:
-                log_step("4. Safe SELECT (/api/query/execute)", False, f"HTTP {r.status_code} - {r.text[:80]}")
+                log_step(
+                    "4. Safe SELECT (/api/query/execute)",
+                    False,
+                    f"HTTP {r.status_code} - {r.text[:80]}",
+                )
                 all_passed = False
         except Exception as exc:
             log_step("4. Safe SELECT (/api/query/execute)", False, str(exc))
@@ -100,9 +112,15 @@ def run_smoke_tests(base_url: str) -> bool:
             r = client.post("/api/query/execute", json={"sql": "DROP TABLE users;"})
             if r.status_code == 422:
                 detail = r.json().get("detail", "")
-                log_step("5. Security AST Guard (DROP TABLE)", True, f"HTTP 422 Rejected: {detail[:50]}")
+                log_step(
+                    "5. Security AST Guard (DROP TABLE)", True, f"HTTP 422 Rejected: {detail[:50]}"
+                )
             else:
-                log_step("5. Security AST Guard (DROP TABLE)", False, f"Expected 422, got HTTP {r.status_code}")
+                log_step(
+                    "5. Security AST Guard (DROP TABLE)",
+                    False,
+                    f"Expected 422, got HTTP {r.status_code}",
+                )
                 all_passed = False
         except Exception as exc:
             log_step("5. Security AST Guard (DROP TABLE)", False, str(exc))
@@ -115,15 +133,31 @@ def run_smoke_tests(base_url: str) -> bool:
                 data = r.json()
                 if data.get("type") == "clarification":
                     clarif = data.get("clarification", {})
-                    log_step("6. Ambiguous Clarification (/api/ask)", True, f"Returned clarification question")
+                    log_step(
+                        "6. Ambiguous Clarification (/api/ask)",
+                        True,
+                        f"Returned clarification question",
+                    )
                 else:
                     # Might have answered or made assumptions
-                    log_step("6. Ambiguous Clarification (/api/ask)", True, f"Responded with type: {data.get('type')}")
+                    log_step(
+                        "6. Ambiguous Clarification (/api/ask)",
+                        True,
+                        f"Responded with type: {data.get('type')}",
+                    )
             elif r.status_code in (429, 503):
                 # Demo rate limit or offline LLM key
-                log_step("6. Ambiguous Clarification (/api/ask)", True, f"HTTP {r.status_code} (LLM rate limit / key guard active)")
+                log_step(
+                    "6. Ambiguous Clarification (/api/ask)",
+                    True,
+                    f"HTTP {r.status_code} (LLM rate limit / key guard active)",
+                )
             else:
-                log_step("6. Ambiguous Clarification (/api/ask)", False, f"HTTP {r.status_code} - {r.text[:80]}")
+                log_step(
+                    "6. Ambiguous Clarification (/api/ask)",
+                    False,
+                    f"HTTP {r.status_code} - {r.text[:80]}",
+                )
                 all_passed = False
         except Exception as exc:
             log_step("6. Ambiguous Clarification (/api/ask)", False, str(exc))
@@ -156,4 +190,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

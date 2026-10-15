@@ -149,14 +149,20 @@ def generate_markdown_report(results: list[dict]) -> str:
         "",
         "## Executive Summary",
         "",
-        ("Phase 6 provides end-to-end query optimization that combines deep AST-based plan analysis, "
-        "evidence-backed index suggestions, and **safe, isolated before/after benchmarking**. "
-        "Importantly, QueryPilot strictly separates **MEASURED** performance gains from **ESTIMATED** planner expectations:"),
+        (
+            "Phase 6 provides end-to-end query optimization that combines deep AST-based plan analysis, "
+            "evidence-backed index suggestions, and **safe, isolated before/after benchmarking**. "
+            "Importantly, QueryPilot strictly separates **MEASURED** performance gains from **ESTIMATED** planner expectations:"
+        ),
         "",
-        ("- **MEASURED**: Confirmed speedup exceeding the host's measurement noise threshold ($> 2 \\times \\sigma_{\\text{baseline}}$), "
-        "verified PostgreSQL query planner index adoption, and byte-for-byte MD5 checksum equivalence on query output."),
-        ("- **ESTIMATED**: Theoretical improvements where planner cost decreased, but empirical execution timing fell "
-        "within host system virtualization noise, or where the PostgreSQL planner correctly favored a sequential scan due to low selectivity."),
+        (
+            "- **MEASURED**: Confirmed speedup exceeding the host's measurement noise threshold ($> 2 \\times \\sigma_{\\text{baseline}}$), "
+            "verified PostgreSQL query planner index adoption, and byte-for-byte MD5 checksum equivalence on query output."
+        ),
+        (
+            "- **ESTIMATED**: Theoretical improvements where planner cost decreased, but empirical execution timing fell "
+            "within host system virtualization noise, or where the PostgreSQL planner correctly favored a sequential scan due to low selectivity."
+        ),
         "",
         "### Summary of Benchmarked Queries",
         "",
@@ -181,13 +187,15 @@ def generate_markdown_report(results: list[dict]) -> str:
             f"| `{c['id']}` | {c['category']} | `{idx_id}` | {base_med} | {opt_med} | **{spd}** | {idx_used} | {chk} | **`{lbl}`** |"
         )
 
-    lines.extend([
-        "",
-        "---",
-        "",
-        "## Detailed Case Studies",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "## Detailed Case Studies",
+            "",
+        ]
+    )
 
     for idx, item in enumerate(results, start=1):
         c = item["case"]
@@ -195,79 +203,91 @@ def generate_markdown_report(results: list[dict]) -> str:
         cand = item["candidate"]
         findings = item["findings"]
 
-        lines.extend([
-            f"### {c['title']}",
-            "",
-            f"**Category**: {c['category']}  ",
-            f"**Expected Outcome**: `{c['expected_label']}`  ",
-            f"**Actual Outcome**: **`{bench.improvement_label if bench else 'NONE'}`**  ",
-            "",
-            "#### SQL Query",
-            "```sql",
-            item["sanitized_sql"],
-            "```",
-            "",
-            "#### Baseline Query Plan Findings",
-            f"- **Planner Cost**: {item['total_cost']:.1f}",
-            f"- **Baseline Execution Time**: {item['execution_time_ms']:.2f} ms",
-            f"- **Detected Bottlenecks**: {len(findings)}",
-        ])
+        lines.extend(
+            [
+                f"### {c['title']}",
+                "",
+                f"**Category**: {c['category']}  ",
+                f"**Expected Outcome**: `{c['expected_label']}`  ",
+                f"**Actual Outcome**: **`{bench.improvement_label if bench else 'NONE'}`**  ",
+                "",
+                "#### SQL Query",
+                "```sql",
+                item["sanitized_sql"],
+                "```",
+                "",
+                "#### Baseline Query Plan Findings",
+                f"- **Planner Cost**: {item['total_cost']:.1f}",
+                f"- **Baseline Execution Time**: {item['execution_time_ms']:.2f} ms",
+                f"- **Detected Bottlenecks**: {len(findings)}",
+            ]
+        )
 
         for f in findings:
-            lines.append(f"  - **[{f.severity.upper()}]** `{f.type}` on `{f.table}`: {f.explanation}")
+            lines.append(
+                f"  - **[{f.severity.upper()}]** `{f.type}` on `{f.table}`: {f.explanation}"
+            )
 
         if cand:
-            lines.extend([
-                "",
-                "#### Suggested Index Recommendation",
-                f"- **Index Identifier**: `{cand.id}`",
-                f"- **DDL**: `{cand.ddl}`",
-                f"- **Reasoning**: {cand.reasoning}",
-                f"- **Estimated Risk**: {cand.estimated_risk}",
-            ])
+            lines.extend(
+                [
+                    "",
+                    "#### Suggested Index Recommendation",
+                    f"- **Index Identifier**: `{cand.id}`",
+                    f"- **DDL**: `{cand.ddl}`",
+                    f"- **Reasoning**: {cand.reasoning}",
+                    f"- **Estimated Risk**: {cand.estimated_risk}",
+                ]
+            )
 
         if bench:
-            lines.extend([
-                "",
-                "#### Empirical Benchmark Results (7 Iterations on `sample_shop_bench`)",
-                "",
-                "| Metric | Baseline (Pre-Index) | Optimized (Post-Index) | Delta / Change |",
-                "| :--- | :--- | :--- | :--- |",
-                f"| **Median Latency** | {bench.baseline_stats.median_ms:.2f} ms | {bench.optimized_stats.median_ms:.2f} ms | {bench.baseline_stats.median_ms - bench.optimized_stats.median_ms:+.2f} ms |",
-                f"| **P95 Latency** | {bench.baseline_stats.p95_ms:.2f} ms | {bench.optimized_stats.p95_ms:.2f} ms | {bench.baseline_stats.p95_ms - bench.optimized_stats.p95_ms:+.2f} ms |",
-                f"| **Min Latency** | {bench.baseline_stats.min_ms:.2f} ms | {bench.optimized_stats.min_ms:.2f} ms | {bench.baseline_stats.min_ms - bench.optimized_stats.min_ms:+.2f} ms |",
-                f"| **Max Latency** | {bench.baseline_stats.max_ms:.2f} ms | {bench.optimized_stats.max_ms:.2f} ms | {bench.baseline_stats.max_ms - bench.optimized_stats.max_ms:+.2f} ms |",
-                f"| **Std. Deviation** ($\\sigma$) | {bench.baseline_stats.stddev_ms:.2f} ms | {bench.optimized_stats.stddev_ms:.2f} ms | Host timing variance |",
-                f"| **Speedup Factor** | — | — | **{bench.speedup_factor:.2f}x** |",
-                f"| **Plan Adoption** | Heap / Seq Scan | {bench.new_plan_node or 'None'} | Index adopted: {bench.index_used} |",
-                f"| **Index Size** | — | {bench.index_size_mb:.2f} MB | On-disk footprint |",
-                f"| **Result Equivalence** | MD5 Checksum | MD5 Checksum | **{'Verified Match' if bench.results_match else 'MISMATCH'}** |",
-                "",
-                f"> **Conclusion**: {bench.conclusion}",
-            ])
+            lines.extend(
+                [
+                    "",
+                    "#### Empirical Benchmark Results (7 Iterations on `sample_shop_bench`)",
+                    "",
+                    "| Metric | Baseline (Pre-Index) | Optimized (Post-Index) | Delta / Change |",
+                    "| :--- | :--- | :--- | :--- |",
+                    f"| **Median Latency** | {bench.baseline_stats.median_ms:.2f} ms | {bench.optimized_stats.median_ms:.2f} ms | {bench.baseline_stats.median_ms - bench.optimized_stats.median_ms:+.2f} ms |",
+                    f"| **P95 Latency** | {bench.baseline_stats.p95_ms:.2f} ms | {bench.optimized_stats.p95_ms:.2f} ms | {bench.baseline_stats.p95_ms - bench.optimized_stats.p95_ms:+.2f} ms |",
+                    f"| **Min Latency** | {bench.baseline_stats.min_ms:.2f} ms | {bench.optimized_stats.min_ms:.2f} ms | {bench.baseline_stats.min_ms - bench.optimized_stats.min_ms:+.2f} ms |",
+                    f"| **Max Latency** | {bench.baseline_stats.max_ms:.2f} ms | {bench.optimized_stats.max_ms:.2f} ms | {bench.baseline_stats.max_ms - bench.optimized_stats.max_ms:+.2f} ms |",
+                    f"| **Std. Deviation** ($\\sigma$) | {bench.baseline_stats.stddev_ms:.2f} ms | {bench.optimized_stats.stddev_ms:.2f} ms | Host timing variance |",
+                    f"| **Speedup Factor** | — | — | **{bench.speedup_factor:.2f}x** |",
+                    f"| **Plan Adoption** | Heap / Seq Scan | {bench.new_plan_node or 'None'} | Index adopted: {bench.index_used} |",
+                    f"| **Index Size** | — | {bench.index_size_mb:.2f} MB | On-disk footprint |",
+                    f"| **Result Equivalence** | MD5 Checksum | MD5 Checksum | **{'Verified Match' if bench.results_match else 'MISMATCH'}** |",
+                    "",
+                    f"> **Conclusion**: {bench.conclusion}",
+                ]
+            )
 
         lines.extend(["", "---", ""])
 
-    lines.extend([
-        "## Statistical Methodology & Noise Protocol",
-        "",
-        "### Virtualization Timing Variance on Windows (Docker Desktop)",
-        ("Because Docker on Windows runs within the WSL2 / Hyper-V hypervisor, microsecond-level database timings "
-        "experience host scheduling jitter, I/O caching variance, and dynamic memory allocation noise. "
-        "To avoid deceptive performance claims, QueryPilot implements a 4-tier noise barrier:"),
-        "",
-        "1. **Warm-up Discard**: 2 unmeasured warm-up iterations precede both the baseline and indexed test runs to prime PostgreSQL shared buffers.",
-        "2. **Median Filtering**: 7 measured iterations are executed; median and 95th-percentile (p95) metrics are reported to eliminate outlier skew.",
-        "3. **Two-Sigma ($2\\sigma$) Decision Barrier**: A performance gain is classified as `MEASURED` if and only if:",
-        "   $$\\text{Baseline Median} - \\text{Optimized Median} > 2 \\times \\sigma_{\\text{baseline}} \\quad \\text{and} \\quad \\text{Speedup} > 1.05$$",
-        "   If the measured difference is smaller than $2 \\times \\sigma_{\\text{baseline}}$, the speedup is marked as `ESTIMATED` (statistically indistinguishable from noise).",
-        "4. **Deterministic MD5 Checksum**: The result set string representation is hashed with MD5 before and after indexing to verify query semantic equivalence.",
-        "",
-        "## Invariant Guarantees",
-        "- **Production Database Untouched**: DDL and benchmark iterations run strictly against `sample_shop_bench`. The production `sample_shop` database remains completely read-only.",
-        "- **Zero LLM DDL**: All `CREATE INDEX` statements are constructed deterministically by the application layer using verified schema identifiers. LLM models cannot propose or execute arbitrary SQL DDL.",
-        "- **Guaranteed Teardown**: Candidate indexes are dropped in a `finally` block on `sample_shop_bench`, leaving the benchmark environment clean for subsequent tests.",
-    ])
+    lines.extend(
+        [
+            "## Statistical Methodology & Noise Protocol",
+            "",
+            "### Virtualization Timing Variance on Windows (Docker Desktop)",
+            (
+                "Because Docker on Windows runs within the WSL2 / Hyper-V hypervisor, microsecond-level database timings "
+                "experience host scheduling jitter, I/O caching variance, and dynamic memory allocation noise. "
+                "To avoid deceptive performance claims, QueryPilot implements a 4-tier noise barrier:"
+            ),
+            "",
+            "1. **Warm-up Discard**: 2 unmeasured warm-up iterations precede both the baseline and indexed test runs to prime PostgreSQL shared buffers.",
+            "2. **Median Filtering**: 7 measured iterations are executed; median and 95th-percentile (p95) metrics are reported to eliminate outlier skew.",
+            "3. **Two-Sigma ($2\\sigma$) Decision Barrier**: A performance gain is classified as `MEASURED` if and only if:",
+            "   $$\\text{Baseline Median} - \\text{Optimized Median} > 2 \\times \\sigma_{\\text{baseline}} \\quad \\text{and} \\quad \\text{Speedup} > 1.05$$",
+            "   If the measured difference is smaller than $2 \\times \\sigma_{\\text{baseline}}$, the speedup is marked as `ESTIMATED` (statistically indistinguishable from noise).",
+            "4. **Deterministic MD5 Checksum**: The result set string representation is hashed with MD5 before and after indexing to verify query semantic equivalence.",
+            "",
+            "## Invariant Guarantees",
+            "- **Production Database Untouched**: DDL and benchmark iterations run strictly against `sample_shop_bench`. The production `sample_shop` database remains completely read-only.",
+            "- **Zero LLM DDL**: All `CREATE INDEX` statements are constructed deterministically by the application layer using verified schema identifiers. LLM models cannot propose or execute arbitrary SQL DDL.",
+            "- **Guaranteed Teardown**: Candidate indexes are dropped in a `finally` block on `sample_shop_bench`, leaving the benchmark environment clean for subsequent tests.",
+        ]
+    )
 
     return "\n".join(lines)
 

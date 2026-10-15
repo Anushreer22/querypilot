@@ -63,7 +63,6 @@ jobs:
           psql -v ON_ERROR_STOP=1 --dbname postgres <<-EOSQL
             SELECT 'CREATE DATABASE querypilot_app' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'querypilot_app')\gexec
             SELECT 'CREATE DATABASE sample_shop' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'sample_shop')\gexec
-            SELECT 'CREATE DATABASE sample_shop_bench' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'sample_shop_bench')\gexec
             DO \$\$
             BEGIN
               IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_rw') THEN
@@ -77,7 +76,6 @@ jobs:
             REVOKE CONNECT ON DATABASE querypilot_app FROM PUBLIC;
             GRANT ALL PRIVILEGES ON DATABASE querypilot_app TO app_rw;
             GRANT CONNECT ON DATABASE sample_shop TO readonly_user;
-            GRANT CONNECT ON DATABASE sample_shop_bench TO readonly_user;
           EOSQL
 
           # Permissions within querypilot_app
@@ -89,18 +87,9 @@ jobs:
             ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO app_rw;
           EOSQL
 
-          # Ensure readonly_user on sample_shop has strict read-only parameters
+          # Configure role-level settings
           psql -v ON_ERROR_STOP=1 --dbname sample_shop <<-EOSQL
             REVOKE CREATE ON SCHEMA public FROM readonly_user;
-            REVOKE ALL ON ALL TABLES IN SCHEMA public FROM readonly_user;
-            ALTER ROLE readonly_user SET default_transaction_read_only = on;
-            ALTER ROLE readonly_user SET statement_timeout = '5s';
-          EOSQL
-
-          # Same permissions on sample_shop_bench
-          psql -v ON_ERROR_STOP=1 --dbname sample_shop_bench <<-EOSQL
-            REVOKE CREATE ON SCHEMA public FROM readonly_user;
-            REVOKE ALL ON ALL TABLES IN SCHEMA public FROM readonly_user;
             ALTER ROLE readonly_user SET default_transaction_read_only = on;
             ALTER ROLE readonly_user SET statement_timeout = '5s';
           EOSQL
@@ -118,6 +107,29 @@ jobs:
           SHOP_ADMIN_DATABASE_URL: postgresql+psycopg://postgres:querypilot_postgres_pass@localhost:5432/sample_shop
         run: |
           python scripts/seed_shop.py --small
+
+      - name: Setup sample_shop_bench copy database for benchmarking
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: querypilot_postgres_pass
+        run: |
+          psql -v ON_ERROR_STOP=1 --dbname postgres <<-EOSQL
+            DROP DATABASE IF EXISTS sample_shop_bench;
+            CREATE DATABASE sample_shop_bench WITH TEMPLATE sample_shop;
+            GRANT CONNECT ON DATABASE sample_shop_bench TO readonly_user;
+          EOSQL
+          psql -v ON_ERROR_STOP=1 --dbname sample_shop <<-EOSQL
+            GRANT USAGE ON SCHEMA public TO readonly_user;
+            GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly_user;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO readonly_user;
+          EOSQL
+          psql -v ON_ERROR_STOP=1 --dbname sample_shop_bench <<-EOSQL
+            GRANT USAGE ON SCHEMA public TO readonly_user;
+            GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly_user;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO readonly_user;
+          EOSQL
 
       - name: Run Ruff linter and formatter checks
         run: |

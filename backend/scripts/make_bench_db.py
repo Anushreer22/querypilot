@@ -11,11 +11,15 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 
-def create_or_reset_bench_db(admin_url: str = "postgresql://postgres:querypilot_postgres_pass@127.0.0.1:5436/postgres") -> bool:
+def create_or_reset_bench_db(
+    admin_url: str = "postgresql://postgres:querypilot_postgres_pass@127.0.0.1:5436/postgres",
+) -> bool:
     """Create or reset sample_shop_bench database as an exact clone of sample_shop."""
     parsed = urlparse(admin_url)
     # Ensure connecting to 'postgres' maintenance database for administrative DDL
-    maintenance_url = f"postgresql://{parsed.username}:{parsed.password}@{parsed.hostname}:{parsed.port}/postgres"
+    maintenance_url = (
+        f"postgresql://{parsed.username}:{parsed.password}@{parsed.hostname}:{parsed.port}/postgres"
+    )
 
     logger.info("Connecting to maintenance database to configure sample_shop_bench...")
     try:
@@ -49,7 +53,9 @@ def create_or_reset_bench_db(admin_url: str = "postgresql://postgres:querypilot_
         return False
 
 
-def check_bench_db(admin_url: str = "postgresql://postgres:querypilot_postgres_pass@127.0.0.1:5436/postgres") -> bool:
+def check_bench_db(
+    admin_url: str = "postgresql://postgres:querypilot_postgres_pass@127.0.0.1:5436/postgres",
+) -> bool:
     """Check if sample_shop_bench exists and is accessible."""
     parsed = urlparse(admin_url)
     bench_url = f"postgresql://readonly_user:querypilot_readonly_pass@{parsed.hostname}:{parsed.port}/sample_shop_bench"
@@ -64,11 +70,14 @@ def check_bench_db(admin_url: str = "postgresql://postgres:querypilot_postgres_p
         return False
 
 
-
 def main():
     parser = argparse.ArgumentParser(description="Manage QueryPilot benchmark database.")
-    parser.add_argument("--check", action="store_true", help="Check if benchmark database exists and is valid.")
-    parser.add_argument("--reset", action="store_true", help="Force clone/reset benchmark database.")
+    parser.add_argument(
+        "--check", action="store_true", help="Check if benchmark database exists and is valid."
+    )
+    parser.add_argument(
+        "--reset", action="store_true", help="Force clone/reset benchmark database."
+    )
     args = parser.parse_args()
 
     if args.check:

@@ -38,51 +38,227 @@ SMALL_ORDERS = 5_000
 
 # Name pools for fast in-memory combination
 FIRST_NAMES = [
-    "James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda",
-    "William", "Elizabeth", "David", "Barbara", "Richard", "Susan", "Joseph", "Jessica",
-    "Thomas", "Sarah", "Charles", "Karen", "Christopher", "Nancy", "Daniel", "Lisa",
-    "Matthew", "Betty", "Anthony", "Margaret", "Mark", "Sandra", "Donald", "Ashley",
-    "Steven", "Kimberly", "Paul", "Emily", "Andrew", "Donna", "Joshua", "Michelle",
-    "Kenneth", "Carol", "Kevin", "Amanda", "Brian", "Melissa", "George", "Deborah",
-    "Edward", "Stephanie", "Ronald", "Rebecca", "Timothy", "Sharon", "Jason", "Laura",
-    "Jeffrey", "Cynthia", "Ryan", "Amy", "Jacob", "Kathleen", "Gary", "Angela",
-    "Nicholas", "Shirley", "Eric", "Emma", "Jonathan", "Brenda", "Stephen", "Pamela",
-    "Larry", "Nicole", "Justin", "Anna", "Scott", "Samantha", "Brandon", "Katherine",
+    "James",
+    "Mary",
+    "John",
+    "Patricia",
+    "Robert",
+    "Jennifer",
+    "Michael",
+    "Linda",
+    "William",
+    "Elizabeth",
+    "David",
+    "Barbara",
+    "Richard",
+    "Susan",
+    "Joseph",
+    "Jessica",
+    "Thomas",
+    "Sarah",
+    "Charles",
+    "Karen",
+    "Christopher",
+    "Nancy",
+    "Daniel",
+    "Lisa",
+    "Matthew",
+    "Betty",
+    "Anthony",
+    "Margaret",
+    "Mark",
+    "Sandra",
+    "Donald",
+    "Ashley",
+    "Steven",
+    "Kimberly",
+    "Paul",
+    "Emily",
+    "Andrew",
+    "Donna",
+    "Joshua",
+    "Michelle",
+    "Kenneth",
+    "Carol",
+    "Kevin",
+    "Amanda",
+    "Brian",
+    "Melissa",
+    "George",
+    "Deborah",
+    "Edward",
+    "Stephanie",
+    "Ronald",
+    "Rebecca",
+    "Timothy",
+    "Sharon",
+    "Jason",
+    "Laura",
+    "Jeffrey",
+    "Cynthia",
+    "Ryan",
+    "Amy",
+    "Jacob",
+    "Kathleen",
+    "Gary",
+    "Angela",
+    "Nicholas",
+    "Shirley",
+    "Eric",
+    "Emma",
+    "Jonathan",
+    "Brenda",
+    "Stephen",
+    "Pamela",
+    "Larry",
+    "Nicole",
+    "Justin",
+    "Anna",
+    "Scott",
+    "Samantha",
+    "Brandon",
+    "Katherine",
 ]
 
 LAST_NAMES = [
-    "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
-    "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas",
-    "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson", "White",
-    "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson", "Walker", "Young",
-    "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
-    "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell",
-    "Carter", "Roberts", "Gomez", "Phillips", "Evans", "Turner", "Diaz", "Parker",
-    "Cruz", "Edwards", "Collins", "Reyes", "Stewart", "Morris", "Morales", "Murphy",
-    "Cook", "Rogers", "Gutierrez", "Ortiz", "Morgan", "Cooper", "Peterson", "Bailey",
+    "Smith",
+    "Johnson",
+    "Williams",
+    "Brown",
+    "Jones",
+    "Garcia",
+    "Miller",
+    "Davis",
+    "Rodriguez",
+    "Martinez",
+    "Hernandez",
+    "Lopez",
+    "Gonzalez",
+    "Wilson",
+    "Anderson",
+    "Thomas",
+    "Taylor",
+    "Moore",
+    "Jackson",
+    "Martin",
+    "Lee",
+    "Perez",
+    "Thompson",
+    "White",
+    "Harris",
+    "Sanchez",
+    "Clark",
+    "Ramirez",
+    "Lewis",
+    "Robinson",
+    "Walker",
+    "Young",
+    "Allen",
+    "King",
+    "Wright",
+    "Scott",
+    "Torres",
+    "Nguyen",
+    "Hill",
+    "Flores",
+    "Green",
+    "Adams",
+    "Nelson",
+    "Baker",
+    "Hall",
+    "Rivera",
+    "Campbell",
+    "Mitchell",
+    "Carter",
+    "Roberts",
+    "Gomez",
+    "Phillips",
+    "Evans",
+    "Turner",
+    "Diaz",
+    "Parker",
+    "Cruz",
+    "Edwards",
+    "Collins",
+    "Reyes",
+    "Stewart",
+    "Morris",
+    "Morales",
+    "Murphy",
+    "Cook",
+    "Rogers",
+    "Gutierrez",
+    "Ortiz",
+    "Morgan",
+    "Cooper",
+    "Peterson",
+    "Bailey",
 ]
 
 COUNTRIES = [
-    "United States", "United Kingdom", "Germany", "Canada", "France",
-    "India", "Australia", "Japan", "Brazil", "Netherlands",
+    "United States",
+    "United Kingdom",
+    "Germany",
+    "Canada",
+    "France",
+    "India",
+    "Australia",
+    "Japan",
+    "Brazil",
+    "Netherlands",
 ]
 COUNTRY_WEIGHTS = [0.40, 0.12, 0.10, 0.08, 0.07, 0.06, 0.05, 0.04, 0.04, 0.04]
 
 CATEGORIES = [
-    "Electronics", "Apparel", "Home & Kitchen", "Books",
-    "Health & Beauty", "Sports & Outdoors", "Toys & Games", "Automotive",
+    "Electronics",
+    "Apparel",
+    "Home & Kitchen",
+    "Books",
+    "Health & Beauty",
+    "Sports & Outdoors",
+    "Toys & Games",
+    "Automotive",
 ]
 
 PRODUCT_ADJECTIVES = [
-    "Ultra", "Pro", "Smart", "Eco", "Classic", "Premium", "Compact", "Wireless",
-    "Ergonomic", "Portable", "Digital", "Precision", "Heavy-Duty", "Modern", "Vintage",
+    "Ultra",
+    "Pro",
+    "Smart",
+    "Eco",
+    "Classic",
+    "Premium",
+    "Compact",
+    "Wireless",
+    "Ergonomic",
+    "Portable",
+    "Digital",
+    "Precision",
+    "Heavy-Duty",
+    "Modern",
+    "Vintage",
 ]
 
 PRODUCT_NOUNS = [
-    "Headphones", "T-Shirt", "Coffee Maker", "Backpack", "Fitness Tracker",
-    "LED Desk Lamp", "Water Bottle", "Running Shoes", "Wireless Mouse", "Keyboard",
-    "Blender", "Cookware Set", "Smartphone Case", "Yoga Mat", "Bluetooth Speaker",
-    "Novel", "Notebook", "Desk Chair", "Power Bank", "Air Purifier",
+    "Headphones",
+    "T-Shirt",
+    "Coffee Maker",
+    "Backpack",
+    "Fitness Tracker",
+    "LED Desk Lamp",
+    "Water Bottle",
+    "Running Shoes",
+    "Wireless Mouse",
+    "Keyboard",
+    "Blender",
+    "Cookware Set",
+    "Smartphone Case",
+    "Yoga Mat",
+    "Bluetooth Speaker",
+    "Novel",
+    "Notebook",
+    "Desk Chair",
+    "Power Bank",
+    "Air Purifier",
 ]
 
 ORDER_STATUSES = ["delivered", "shipped", "paid", "pending", "cancelled", "refunded"]
@@ -92,6 +268,7 @@ STATUS_WEIGHTS = [0.72, 0.10, 0.06, 0.04, 0.05, 0.03]
 def get_default_database_url() -> str:
     """Read privileged database URL from environment or fallback to Docker container default."""
     from app.core.config import settings
+
     return settings.shop_admin_database_url
 
 
@@ -132,19 +309,21 @@ def seed_sample_shop(
     try:
         cur = conn.cursor()
 
-        # 1. SAFETY CHECK: Must only ever run against sample_shop
+        # 1. SAFETY CHECK: Must only ever run against sample_shop or sample_shop_bench
         cur.execute("SELECT current_database();")
         active_db = cur.fetchone()[0]
-        if active_db != "sample_shop":
+        if active_db not in ("sample_shop", "sample_shop_bench"):
             raise ValueError(
-                f"SAFETY CHECK FAILED: seed script is restricted to database 'sample_shop', but connected to '{active_db}'!"
+                f"SAFETY CHECK FAILED: seed script is restricted to database 'sample_shop' or 'sample_shop_bench', but connected to '{active_db}'!"
             )
 
         # 2. Reset if requested
         if reset:
             print("Resetting tables (TRUNCATE RESTART IDENTITY CASCADE)...")
             t0 = time.time()
-            cur.execute("TRUNCATE TABLE order_items, orders, products, users RESTART IDENTITY CASCADE;")
+            cur.execute(
+                "TRUNCATE TABLE order_items, orders, products, users RESTART IDENTITY CASCADE;"
+            )
             conn.commit()
             print(f"Reset completed in {time.time() - t0:.2f}s")
 
@@ -162,7 +341,9 @@ def seed_sample_shop(
         user_country_idx = rng.choice(len(COUNTRIES), size=num_users, p=COUNTRY_WEIGHTS)
         # Uniform user creation dates over past 730 days
         user_created_offsets = rng.uniform(0, 720 * 86400, size=num_users)
-        user_created_dates = [start_date + timedelta(seconds=float(off)) for off in user_created_offsets]
+        user_created_dates = [
+            start_date + timedelta(seconds=float(off)) for off in user_created_offsets
+        ]
 
         # Ingest users with COPY
         user_buf = io.StringIO()
@@ -204,11 +385,15 @@ def seed_sample_shop(
             price = round(float(base_price), 2)
             product_prices.append(price)
             stock = int(rng.integers(0, 500))
-            p_created = (start_date + timedelta(days=int(rng.integers(0, 30)))).strftime("%Y-%m-%d %H:%M:%S%z")
+            p_created = (start_date + timedelta(days=int(rng.integers(0, 30)))).strftime(
+                "%Y-%m-%d %H:%M:%S%z"
+            )
             product_buf.write(f"{pid}\t{pname}\t{cat}\t{price:.2f}\t{stock}\t{p_created}\n")
 
         product_buf.seek(0)
-        with cur.copy("COPY products (id, name, category, price, stock, created_at) FROM STDIN") as copy:
+        with cur.copy(
+            "COPY products (id, name, category, price, stock, created_at) FROM STDIN"
+        ) as copy:
             copy.write(product_buf.getvalue())
         conn.commit()
         print(f"Ingested {num_products:,} products in {time.time() - t0:.2f}s")
@@ -216,7 +401,9 @@ def seed_sample_shop(
         # ---------------------------------------------------------
         # 5. Generate & Ingest Orders and Order Items
         # ---------------------------------------------------------
-        print(f"Generating and streaming ~{num_orders:,} orders and ~{num_orders * 3:,} order_items...")
+        print(
+            f"Generating and streaming ~{num_orders:,} orders and ~{num_orders * 3:,} order_items..."
+        )
         t0 = time.time()
 
         # Power law distribution for user order frequency (Pareto):
@@ -241,7 +428,9 @@ def seed_sample_shop(
         order_day_offsets = rng.choice(725, size=num_orders, p=day_weights)
 
         # Product popularity: Zipfian / power-law distribution
-        item_product_choices = (rng.power(0.40, size=num_orders * 5) * num_products).astype(np.int64) + 1
+        item_product_choices = (rng.power(0.40, size=num_orders * 5) * num_products).astype(
+            np.int64
+        ) + 1
         item_product_choices = np.clip(item_product_choices, 1, num_products)
 
         # Batch streaming to maintain low memory footprint while maximizing psycopg COPY speed
@@ -263,14 +452,18 @@ def seed_sample_shop(
 
                 # Order must be created after user account creation
                 o_offset_days = int(order_day_offsets[i])
-                o_time = start_date + timedelta(days=o_offset_days, seconds=float(rng.uniform(0, 86400)))
+                o_time = start_date + timedelta(
+                    days=o_offset_days, seconds=float(rng.uniform(0, 86400))
+                )
                 if o_time < u_created:
                     o_time = u_created + timedelta(hours=float(rng.uniform(1, 48)))
 
                 status = ORDER_STATUSES[order_status_choices[i]]
 
                 # Each order has 1 to 5 items (avg ~3)
-                num_items_in_order = int(rng.choice([1, 2, 3, 4, 5], p=[0.30, 0.35, 0.20, 0.10, 0.05]))
+                num_items_in_order = int(
+                    rng.choice([1, 2, 3, 4, 5], p=[0.30, 0.35, 0.20, 0.10, 0.05])
+                )
                 order_total = 0.0
 
                 for _ in range(num_items_in_order):
@@ -291,26 +484,42 @@ def seed_sample_shop(
 
             # Stream batch via COPY
             orders_buf.seek(0)
-            with cur.copy("COPY orders (id, user_id, status, total_amount, created_at) FROM STDIN") as copy:
+            with cur.copy(
+                "COPY orders (id, user_id, status, total_amount, created_at) FROM STDIN"
+            ) as copy:
                 copy.write(orders_buf.getvalue())
 
             items_buf.seek(0)
-            with cur.copy("COPY order_items (id, order_id, product_id, quantity, unit_price) FROM STDIN") as copy:
+            with cur.copy(
+                "COPY order_items (id, order_id, product_id, quantity, unit_price) FROM STDIN"
+            ) as copy:
                 copy.write(items_buf.getvalue())
 
             conn.commit()
-            print(f"  Ingested orders {batch_start + 1:,} to {batch_end:,} ({total_items_count:,} total items)...")
+            print(
+                f"  Ingested orders {batch_start + 1:,} to {batch_end:,} ({total_items_count:,} total items)..."
+            )
 
-        print(f"Ingested {num_orders:,} orders and {total_items_count:,} order_items in {time.time() - t0:.2f}s")
+        print(
+            f"Ingested {num_orders:,} orders and {total_items_count:,} order_items in {time.time() - t0:.2f}s"
+        )
 
         # ---------------------------------------------------------
         # 6. Synchronize Identity Sequences
         # ---------------------------------------------------------
         print("Synchronizing sequence counters...")
-        cur.execute("SELECT setval(pg_get_serial_sequence('users', 'id'), (SELECT COALESCE(MAX(id), 1) FROM users));")
-        cur.execute("SELECT setval(pg_get_serial_sequence('products', 'id'), (SELECT COALESCE(MAX(id), 1) FROM products));")
-        cur.execute("SELECT setval(pg_get_serial_sequence('orders', 'id'), (SELECT COALESCE(MAX(id), 1) FROM orders));")
-        cur.execute("SELECT setval(pg_get_serial_sequence('order_items', 'id'), (SELECT COALESCE(MAX(id), 1) FROM order_items));")
+        cur.execute(
+            "SELECT setval(pg_get_serial_sequence('users', 'id'), (SELECT COALESCE(MAX(id), 1) FROM users));"
+        )
+        cur.execute(
+            "SELECT setval(pg_get_serial_sequence('products', 'id'), (SELECT COALESCE(MAX(id), 1) FROM products));"
+        )
+        cur.execute(
+            "SELECT setval(pg_get_serial_sequence('orders', 'id'), (SELECT COALESCE(MAX(id), 1) FROM orders));"
+        )
+        cur.execute(
+            "SELECT setval(pg_get_serial_sequence('order_items', 'id'), (SELECT COALESCE(MAX(id), 1) FROM order_items));"
+        )
         conn.commit()
 
         # ---------------------------------------------------------
@@ -325,7 +534,9 @@ def seed_sample_shop(
         # ---------------------------------------------------------
         # 8. Exact Verification: total_amount equals sum of line items for ALL orders
         # ---------------------------------------------------------
-        print("Verifying integrity: validating total_amount == sum(quantity * unit_price) for ALL orders...")
+        print(
+            "Verifying integrity: validating total_amount == sum(quantity * unit_price) for ALL orders..."
+        )
         t0 = time.time()
         cur.execute("""
             SELECT count(*)
@@ -339,8 +550,12 @@ def seed_sample_shop(
         """)
         mismatched_orders = cur.fetchone()[0]
         if mismatched_orders > 0:
-            raise AssertionError(f"DATA INTEGRITY ERROR: Found {mismatched_orders} orders with total_amount mismatch!")
-        print(f"Integrity check passed: 100% of orders ({num_orders:,}) match line items sum in {time.time() - t0:.2f}s")
+            raise AssertionError(
+                f"DATA INTEGRITY ERROR: Found {mismatched_orders} orders with total_amount mismatch!"
+            )
+        print(
+            f"Integrity check passed: 100% of orders ({num_orders:,}) match line items sum in {time.time() - t0:.2f}s"
+        )
 
         # ---------------------------------------------------------
         # 9. Summary & Final Counts
@@ -374,12 +589,34 @@ def seed_sample_shop(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Seed sample_shop database with realistic e-commerce data.")
-    parser.add_argument("--small", action="store_true", help="Generate smaller dataset (1k users, 5k orders) for quick testing")
-    parser.add_argument("--medium", action="store_true", help="Generate medium dataset (10k users, 1k products, 100k orders) for free-tier Neon")
-    parser.add_argument("--seed", type=int, default=42, help="Random generator seed for determinism (default: 42)")
-    parser.add_argument("--reset", action="store_true", default=True, help="Truncate tables before seeding (default: True)")
-    parser.add_argument("--database-url", type=str, default=None, help="Database connection URL (defaults to SHOP_ADMIN_DATABASE_URL)")
+    parser = argparse.ArgumentParser(
+        description="Seed sample_shop database with realistic e-commerce data."
+    )
+    parser.add_argument(
+        "--small",
+        action="store_true",
+        help="Generate smaller dataset (1k users, 5k orders) for quick testing",
+    )
+    parser.add_argument(
+        "--medium",
+        action="store_true",
+        help="Generate medium dataset (10k users, 1k products, 100k orders) for free-tier Neon",
+    )
+    parser.add_argument(
+        "--seed", type=int, default=42, help="Random generator seed for determinism (default: 42)"
+    )
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        default=True,
+        help="Truncate tables before seeding (default: True)",
+    )
+    parser.add_argument(
+        "--database-url",
+        type=str,
+        default=None,
+        help="Database connection URL (defaults to SHOP_ADMIN_DATABASE_URL)",
+    )
 
     args = parser.parse_args()
 
@@ -388,6 +625,7 @@ def main():
         # Import config from app
         sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
         from app.core.config import settings
+
         db_url = settings.shop_admin_database_url
 
     seed_sample_shop(

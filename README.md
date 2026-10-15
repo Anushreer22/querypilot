@@ -26,32 +26,32 @@ flowchart TD
         DailyGuard["Daily LLM Budget & Rate Limiter (HTTP 429)"]
         
         subgraph CoreServices["Core Engines"]
-            Validator["Phase 3 AST Validator (sqlglot)\n- Read-only SELECT\n- Table allowlist\n- Limit clamping"]
-            AskEngine["Phase 4 NL-to-SQL Engine\n- One-shot repair\n- Clarification detector"]
-            AgentLoop["Phase 5 Autonomous Agent\n- Schema inspection\n- Iterative tool execution\n- Reflection loop"]
-            Optimizer["Phase 6 Query Optimizer\n- EXPLAIN plan parser\n- Rule-based index advisor\n- Benchmark gating (HTTP 403)"]
+            Validator["Phase 3 AST Validator (sqlglot)<br/>- Read-only SELECT<br/>- Table allowlist<br/>- Limit clamping"]
+            AskEngine["Phase 4 NL-to-SQL Engine<br/>- One-shot repair<br/>- Clarification detector"]
+            AgentLoop["Phase 5 Autonomous Agent<br/>- Schema inspection<br/>- Iterative tool execution<br/>- Reflection loop"]
+            Optimizer["Phase 6 Query Optimizer<br/>- EXPLAIN plan parser<br/>- Rule-based index advisor<br/>- Benchmark gating (HTTP 403)"]
         end
     end
 
     subgraph DataTier["Data & Isolation Layer (PostgreSQL 16)"]
-        AppDB[("querypilot_app\nRole: app_rw\nAudit ledger & agent runs")]
-        ShopDB[("sample_shop (500k orders)\nRole: readonly_user\ndefault_transaction_ro=on\nstatement_timeout=5s")]
-        BenchDB[("sample_shop_bench\nDedicated benchmark copy\nMutex-locked & auto-cleaned")]
+        AppDB[("querypilot_app<br/>Role: app_rw<br/>Audit ledger & agent runs")]
+        ShopDB[("sample_shop: 500k orders<br/>Role: readonly_user<br/>default_transaction_ro=on<br/>statement_timeout=5s")]
+        BenchDB[("sample_shop_bench<br/>Dedicated benchmark copy<br/>Mutex-locked & auto-cleaned")]
     end
 
-    Client -->|REST / JSON| SecurityMW
+    Client -->|"REST / JSON"| SecurityMW
     SecurityMW --> Router
     Router --> DailyGuard
     DailyGuard --> CoreServices
     
-    Validator -->|Validated SQL| ShopDB
-    AskEngine -->|Read-only query| ShopDB
-    AskEngine -->|Audit record| AppDB
-    AgentLoop -->|Tool actions| ShopDB
-    AgentLoop -->|Run details| AppDB
-    Optimizer -->|EXPLAIN ANALYZE (Rollback)| ShopDB
-    Optimizer -.->|Candidate DDL Benchmark| BenchDB
-    Optimizer -->|Optimization history| AppDB
+    Validator -->|"Validated SQL"| ShopDB
+    AskEngine -->|"Read-only query"| ShopDB
+    AskEngine -->|"Audit record"| AppDB
+    AgentLoop -->|"Tool actions"| ShopDB
+    AgentLoop -->|"Run details"| AppDB
+    Optimizer -->|"EXPLAIN ANALYZE (Rollback)"| ShopDB
+    Optimizer -.->|"Candidate DDL Benchmark"| BenchDB
+    Optimizer -->|"Optimization history"| AppDB
 ```
 
 ---
