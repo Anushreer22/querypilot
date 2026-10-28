@@ -24,8 +24,8 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Point Alembic directly to privileged sample_shop admin database URL
-config.set_main_option("sqlalchemy.url", settings.shop_admin_database_url)
+# Point Alembic directly to privileged sample_shop admin database URL (escape % for configparser interpolation safety)
+config.set_main_option("sqlalchemy.url", settings.shop_admin_database_url.replace("%", "%%"))
 
 target_metadata = None
 

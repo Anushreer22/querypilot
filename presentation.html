@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QueryPilot - Presentation Deck</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+    .slide { display: none; }
+    .slide.active { display: flex; animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+  <!-- Presentation Top Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
+        QP
+      </div>
+      <div>
+        <h1 class="font-bold text-sm tracking-wide text-white">QUERYPILOT</h1>
+        <p class="text-xs text-slate-400">Autonomous AI Database Engineer & Optimization Workspace</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-4 text-xs font-mono text-slate-400">
+      <span id="slideIndicator" class="bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 text-indigo-400 font-semibold">Slide 1 / 10</span>
+      <span>Use ← → keys or buttons</span>
+    </div>
+  </header>
+
+  <!-- Slide Stage -->
+  <main class="flex-1 flex items-center justify-center p-6 md:p-12 max-w-6xl mx-auto w-full">
+
+    <!-- Slide 1: Title -->
+    <div class="slide active flex-col justify-center items-center text-center w-full" data-slide="1">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-6">
+        ✦ Phase 8B Deployment & Public Showcase
+      </div>
+      <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight text-white mb-6">
+        Query<span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-400 to-sky-400">Pilot</span>
+      </h1>
+      <p class="text-xl md:text-2xl text-slate-300 max-w-3xl font-light leading-relaxed mb-8">
+        The Autonomous AI Database Engineer & Query Optimization Workspace.
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl w-full text-left mt-4">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-indigo-400 font-semibold text-sm mb-1">💬 Ask Mode</div>
+          <p class="text-xs text-slate-400">Verified NL-to-SQL with AST validation and one-shot repair.</p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-violet-400 font-semibold text-sm mb-1">🤖 Autonomous Agent</div>
+          <p class="text-xs text-slate-400">Multi-step schema inspection, tool execution & reflection.</p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-emerald-400 font-semibold text-sm mb-1">⚡ Plan Optimizer</div>
+          <p class="text-xs text-slate-400">Deep EXPLAIN analysis and rule-based index advisor.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2: The Problem -->
+    <div class="slide flex-col justify-center w-full" data-slide="2">
+      <span class="text-indigo-400 font-semibold text-xs tracking-wider uppercase mb-2">The Industry Challenge</span>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">The Database Access & Performance Dilemma</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="p-6 rounded-2xl bg-red-950/20 border border-red-900/40">
+          <h3 class="text-red-400 font-semibold text-lg mb-2">❌ The Security & Risk Nightmare</h3>
+          <ul class="space-y-3 text-sm text-slate-300">
+            <li>• Non-technical teams lack SQL skills, while engineers spend hours writing ad-hoc queries.</li>
+            <li>• LLM-generated SQL often hallucinates, risks destructive writes (DROP, UPDATE), and bypasses safety checks.</li>
+            <li>• Accidental locks or table-locking writes can bring down production databases.</li>
+          </ul>
+        </div>
+        <div class="p-6 rounded-2xl bg-amber-950/20 border border-amber-900/40">
+          <h3 class="text-amber-400 font-semibold text-lg mb-2">❌ The Performance Bottleneck</h3>
+          <ul class="space-y-3 text-sm text-slate-300">
+            <li>• Unindexed queries trigger costly Sequential Scans across hundreds of thousands of rows.</li>
+            <li>• PostgreSQL EXPLAIN plans are cryptic and intimidating for most software engineers.</li>
+            <li>• Database administrators are swamped triaging slow query tickets instead of scaling infrastructure.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: The QueryPilot Solution -->
+    <div class="slide flex-col justify-center w-full" data-slide="3">
+      <span class="text-indigo-400 font-semibold text-xs tracking-wider uppercase mb-2">The Solution</span>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">QueryPilot: Safety, Intelligence & Performance</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition">
+          <div class="text-2xl mb-3">🛡️</div>
+          <h3 class="text-white font-semibold text-base mb-2">Zero-Risk Execution</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Multi-layer defense: AST validation, schema allowlists, and PostgreSQL role-level read-only enforcement. Destructive queries cannot run.
+          </p>
+        </div>
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-violet-500/50 transition">
+          <div class="text-2xl mb-3">🧠</div>
+          <h3 class="text-white font-semibold text-base mb-2">Autonomous Reasoning</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            AI database engineer explores schemas, runs iterative sandbox probes, self-corrects errors, and surfaces rich tabular data.
+          </p>
+        </div>
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 transition">
+          <div class="text-2xl mb-3">🚀</div>
+          <h3 class="text-white font-semibold text-base mb-2">Instant Optimization</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Parses EXPLAIN (ANALYZE, BUFFERS) plans to pinpoint slow Sequential Scans and generates ready-to-run index DDL.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 4: System Architecture -->
+    <div class="slide flex-col justify-center w-full" data-slide="4">
+      <span class="text-indigo-400 font-semibold text-xs tracking-wider uppercase mb-2">Under The Hood</span>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Production-Grade End-to-End Architecture</h2>
+      <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 font-mono text-xs">
+        <div class="p-3 rounded-xl bg-slate-950 border border-indigo-900/50 flex items-center justify-between">
+          <span class="text-indigo-400 font-bold">Client Tier (Vercel)</span>
+          <span class="text-slate-400">Vite + React 18 + Tailwind CSS + Monaco SQL Editor + Visual Plan Trees</span>
+        </div>
+        <div class="text-center text-slate-600">↓ HTTP/JSON + SSE Streaming Probes</div>
+        <div class="p-3 rounded-xl bg-slate-950 border border-violet-900/50 flex items-center justify-between">
+          <span class="text-violet-400 font-bold">Gateway & Security (Render)</span>
+          <span class="text-slate-400">FastAPI Async + Security Headers + Daily LLM Budget Limiter (HTTP 429)</span>
+        </div>
+        <div class="text-center text-slate-600">↓ Async Psycopg 3 Pool</div>
+        <div class="p-3 rounded-xl bg-slate-950 border border-emerald-900/50 flex items-center justify-between">
+          <span class="text-emerald-400 font-bold">Data Tier (Neon PostgreSQL)</span>
+          <span class="text-slate-400">querypilot_app (Metadata) & sample_shop (100k+ orders, strict readonly_user)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5: Multi-Layered Security -->
+    <div class="slide flex-col justify-center w-full" data-slide="5">
+      <span class="text-indigo-400 font-semibold text-xs tracking-wider uppercase mb-2">Safety Architecture</span>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">5 Layers of Defense-in-Depth</h2>
+      <div class="grid md:grid-cols-2 gap-4 text-xs">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-indigo-400 font-semibold text-sm mb-1">1. AST Parsing & Validation</div>
+          <p class="text-slate-400">SQL is parsed into an abstract syntax tree via sqlglot. Only SELECT statements are permitted; DDL/DML is rejected immediately.</p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-indigo-400 font-semibold text-sm mb-1">2. Schema Allowlisting</div>
+          <p class="text-slate-400">Queries are checked against an active table allowlist, preventing access to system catalogs or unapproved schemas.</p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-indigo-400 font-semibold text-sm mb-1">3. Safety Limit Clamping</div>
+          <p class="text-slate-400">Queries missing a LIMIT clause are automatically clamped to 1,000 rows to prevent runaway memory usage.</p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+          <div class="text-indigo-400 font-semibold text-sm mb-1">4. Role-Level PostgreSQL Enforcement</div>
+          <p class="text-slate-400">Connected as readonly_user with default_transaction_read_only = on and a 5-second hard statement_timeout.</p>
+        </div>
+      </div>
+      <div class="mt-4 p-3 rounded-xl bg-red-950/20 border border-red-900/30 text-xs text-red-300">
+        🛡️ <strong>Layer 5 Safeguard:</strong> Explicitly revokes EXECUTE on <code class="bg-red-900/40 px-1 py-0.5 rounded">pg_sleep()</code> to eliminate time-based blind SQL injection vectors.
+      </div>
+    </div>
+
+    <!-- Slide 6: Ask Mode & Autonomous Agent -->
+    <div class="slide flex-col justify-center w-full" data-slide="6">
+      <span class="text-indigo-400 font-semibold text-xs tracking-wider uppercase mb-2">Natural Language Engine</span>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Ask Mode & Autonomous Agent Loop</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+          <h3 class="text-white font-semibold text-base mb-2">⚡ Fast NL-to-SQL</h3>
+          <p class="text-xs text-slate-400 mb-3">Direct translation for standard business queries with 1-shot JSON retry repair.</p>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs text-slate-300 font-mono">
+            "Top 5 products by revenue?" → SELECT p.name, SUM(oi.quantity * oi.unit_price) ... LIMIT 5;
+          </div>
+        </div>
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+          <h3 class="text-white font-semibold text-base mb-2">🤖 Autonomous Agent (ReAct)</h3>
+          <p class="text-xs text-slate-400 mb-3">Handles complex cross-table analytics with tool invocation timeline.</p>
+          <div class="space-y-1.5 text-xs text-slate-300 font-mono">
+            <div class="text-indigo-400">1. inspect_schema(tables=['orders', 'users'])</div>
+            <div class="text-violet-400">2. execute_query(sql='...')</div>
+            <div class="text-emerald-400">3. reflect & present final data breakdown</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 7: EXPLAIN Plan Analysis -->
+    <div class="slide flex-col justify-center w-full" data-slide="7">
+      <span class="text-indigo-400 font-semibold text-xs tracking-wider uppercase mb-2">Performance Intelligence</span>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Deep EXPLAIN Plan Bottleneck Detection</h2>
+      <div class="grid md:grid-cols-2 gap-6 items-center">
+        <div>
+          <p class="text-sm text-slate-300 leading-relaxed mb-4">
+            QueryPilot takes the mystery out of database optimization by converting cryptic PostgreSQL execution JSON into an intuitive visual plan tree.
+          </p>
+          <ul class="space-y-2 text-xs text-slate-400">
+            <li>• Pinpoints exact node types: <code class="text-red-400">Seq Scan</code> vs <code class="text-emerald-400">Index Scan</code>.</li>
+            <li>• Identifies cost imbalances, startup delays, and total plan runtime.</li>
+            <li>• Measures buffer hits, read I/O, and disk temporary files.</li>
+          </ul>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono space-y-2">
+          <div class="text-red-400 font-semibold flex items-center justify-between">
+            <span>⚠ Seq Scan on orders</span>
+            <span>Cost: 4,500.00</span>
+          </div>
+          <div class="text-slate-400 pl-4 border-l border-slate-800">Rows Examined: 100,000</div>
+          <div class="text-slate-400 pl-4 border-l border-slate-800">Filter: (status = 'delivered')</div>
+          <div class="text-amber-400 font-semibold pl-4 border-l border-slate-800">Bottleneck: Unindexed filter scan</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 8: Rule-Based Index Advisor -->
+    <div class="slide flex-col justify-center w-full" data-slide="8">
+      <span class="text-indigo-400 font-semibold text-xs tracking-wider uppercase mb-2">Automated Tuning</span>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Rule-Based Index Recommendations</h2>
+      <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+        <h3 class="text-white font-semibold text-base mb-2">From Bottleneck to 1-Click Fix</h3>
+        <p class="text-xs text-slate-400 mb-4">
+          QueryPilot inspects the query predicates and existing catalog indexes to suggest exact, non-redundant DDL.
+        </p>
+        <div class="p-4 rounded-xl bg-slate-950 border border-emerald-900/40 text-xs font-mono text-emerald-300">
+          -- Recommended by QueryPilot Advisor<br>
+          CREATE INDEX idx_orders_status_total_amount ON orders (status, total_amount);
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs">
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+            <div class="text-slate-400">Before</div>
+            <div class="text-red-400 font-bold mt-1">Seq Scan (38ms)</div>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+            <div class="text-slate-400">After</div>
+            <div class="text-emerald-400 font-bold mt-1">Index Scan (1.4ms)</div>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+            <div class="text-slate-400">Speedup</div>
+            <div class="text-indigo-400 font-bold mt-1">27x Faster</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 9: Cloud Deployment & Neon Integration -->
+    <div class="slide flex-col justify-center w-full" data-slide="9">
+      <span class="text-indigo-400 font-semibold text-xs tracking-wider uppercase mb-2">Cloud Infrastructure</span>
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Production Setup on Neon, Vercel & Render</h2>
+      <div class="grid md:grid-cols-3 gap-4 text-xs">
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+          <div class="text-indigo-400 font-bold text-sm mb-2">🌐 Vercel Edge</div>
+          <p class="text-slate-400 mb-2">Vite React SPA deployed globally with SPA client-side rewrites.</p>
+          <span class="text-emerald-400 font-mono">vercel.json configured</span>
+        </div>
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+          <div class="text-violet-400 font-bold text-sm mb-2">⚙️ Render / Railway</div>
+          <p class="text-slate-400 mb-2">Slim Python 3.12 multi-stage container with non-root security.</p>
+          <span class="text-emerald-400 font-mono">Dockerfile built & verified</span>
+        </div>
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+          <div class="text-emerald-400 font-bold text-sm mb-2">🐘 Neon Serverless DB</div>
+          <p class="text-slate-400 mb-2">Fully automated role provisioning, migrations, and 100k seeded orders.</p>
+          <span class="text-emerald-400 font-mono">40 MB on free tier</span>
+        </div>
+      </div>
+      <div class="mt-4 p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs font-mono text-slate-300">
+        <span>CI/CD Pipeline: GitHub Actions (.github/workflows/ci.yml)</span>
+        <span class="text-emerald-400">✓ 220+ Tests Passing | Ruff Clean | Pip Audit Verified</span>
+      </div>
+    </div>
+
+    <!-- Slide 10: Conclusion & Demo -->
+    <div class="slide flex-col justify-center items-center text-center w-full" data-slide="10">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-6">
+        ✦ Ready for Production
+      </div>
+      <h2 class="text-4xl md:text-5xl font-extrabold text-white mb-6">
+        QueryPilot Live Demonstration
+      </h2>
+      <p class="text-lg text-slate-300 max-w-2xl mb-8 font-light">
+        Experience natural language database engineering, AST-enforced security, and sub-millisecond query optimization.
+      </p>
+      <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 max-w-lg w-full text-left space-y-3 font-mono text-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400">Localhost Workspace:</span>
+          <span class="text-indigo-400">http://localhost:5173</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400">API Documentation:</span>
+          <span class="text-indigo-400">http://localhost:8000/docs</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400">PostgreSQL Instance:</span>
+          <span class="text-emerald-400">Neon Serverless (AWS US-East-2)</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Slide Navigation Controls -->
+  <footer class="border-t border-slate-800 bg-slate-900/60 backdrop-blur px-6 py-4 flex items-center justify-between">
+    <button id="prevBtn" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-2 transition disabled:opacity-30 disabled:cursor-not-allowed">
+      ← Previous
+    </button>
+    <div class="flex items-center gap-1.5" id="dotContainer"></div>
+    <button id="nextBtn" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-indigo-600/30 disabled:opacity-30 disabled:cursor-not-allowed">
+      Next →
+    </button>
+  </footer>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const slideIndicator = document.getElementById('slideIndicator');
+    const dotContainer = document.getElementById('dotContainer');
+    let currentSlide = 0;
+
+    // Create dots
+    slides.forEach((_, idx) => {
+      const dot = document.createElement('button');
+      dot.className = `w-2 h-2 rounded-full transition-all ${idx === 0 ? 'bg-indigo-400 w-5' : 'bg-slate-700'}`;
+      dot.addEventListener('click', () => goToSlide(idx));
+      dotContainer.appendChild(dot);
+    });
+
+    function updateSlide() {
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === currentSlide);
+      });
+      slideIndicator.textContent = `Slide ${currentSlide + 1} / ${slides.length}`;
+      prevBtn.disabled = currentSlide === 0;
+      nextBtn.disabled = currentSlide === slides.length - 1;
+
+      // Update dots
+      Array.from(dotContainer.children).forEach((dot, idx) => {
+        dot.className = `h-2 rounded-full transition-all ${idx === currentSlide ? 'bg-indigo-400 w-5' : 'bg-slate-700 w-2'}`;
+      });
+    }
+
+    function goToSlide(idx) {
+      currentSlide = idx;
+      updateSlide();
+    }
+
+    prevBtn.addEventListener('click', () => {
+      if (currentSlide > 0) { currentSlide--; updateSlide(); }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (currentSlide < slides.length - 1) { currentSlide++; updateSlide(); }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Space') {
+        if (currentSlide < slides.length - 1) { currentSlide++; updateSlide(); }
+      } else if (e.key === 'ArrowLeft') {
+        if (currentSlide > 0) { currentSlide--; updateSlide(); }
+      }
+    });
+
+    updateSlide();
+  </script>
+</body>
+</html>
+

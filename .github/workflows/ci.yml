@@ -116,6 +116,7 @@ jobs:
           PGPASSWORD: querypilot_postgres_pass
         run: |
           psql -v ON_ERROR_STOP=1 --dbname postgres <<-EOSQL
+            SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname IN ('sample_shop', 'sample_shop_bench') AND pid <> pg_backend_pid();
             DROP DATABASE IF EXISTS sample_shop_bench;
             CREATE DATABASE sample_shop_bench WITH TEMPLATE sample_shop;
             GRANT CONNECT ON DATABASE sample_shop_bench TO readonly_user;
@@ -123,11 +124,13 @@ jobs:
           psql -v ON_ERROR_STOP=1 --dbname sample_shop <<-EOSQL
             GRANT USAGE ON SCHEMA public TO readonly_user;
             GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly_user;
+            GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO readonly_user;
             ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO readonly_user;
           EOSQL
           psql -v ON_ERROR_STOP=1 --dbname sample_shop_bench <<-EOSQL
             GRANT USAGE ON SCHEMA public TO readonly_user;
             GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly_user;
+            GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO readonly_user;
             ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO readonly_user;
           EOSQL
 
